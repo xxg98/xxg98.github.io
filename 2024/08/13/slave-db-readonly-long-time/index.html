@@ -11,7 +11,7 @@
         name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1"
       />
-      <title>归档: 2024/7 |  Yan Yonghao的博客</title>
+      <title>从库偶现读取时间过长 |  Yan Yonghao的博客</title>
   <meta name="generator" content="hexo-theme-ayer">
       
       <link rel="shortcut icon" href="/images/favicon.ico" />
@@ -52,52 +52,175 @@
       
     <main class="content on">
       <section class="outer">
-  
-  
-  <article class="articles">
+  <article
+  id="post-slave-db-readonly-long-time"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
     
-    
-    <h1 class="page-type-title">2024/7</h1>
-    
-    
-  
-  
-  
-  
-  
-  
-  <div class="archives-wrap">
-    <div class="archive-year-wrap">
-      <a href="/archives/2024" class="archive-year">2024</a>
-    </div>
-    <div class="archives">
-      
-      <article class="archive-article archive-type-post">
-  <div class="archive-article-inner">
-    <header class="archive-article-header">
-      <a href="/2024/07/14/start/" class="archive-article-date">
-  <time datetime="2024-07-14T11:24:18.000Z" itemprop="datePublished">07/14</time>
-</a>
+    <header class="article-header">
        
-<h2 itemprop="name">
-  <a class="archive-article-title" href="/2024/07/14/start/"
-    >音乐</a> 
-</h2>
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  从库偶现读取时间过长
+</h1>
  
 
+      
     </header>
-    
-    
-  </div>
-</article>
-      
-      
+     
+    <div class="article-meta">
+      <a href="/2024/08/13/slave-db-readonly-long-time/" class="article-date">
+  <time datetime="2024-08-13T13:43:23.000Z" itemprop="datePublished">2024-08-13</time>
+</a>   
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">288</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">1 分钟</span>
+        </span>
+    </span>
+</div>
+ 
     </div>
-  </div>
-  
-  
+      
+    <div class="tocbot"></div>
+
+
+
 
   
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>一次排查从库读取时间过长的有趣经历</p>
+<span id="more"></span>
+<h3 id="了解一下jstack"><a href="#了解一下jstack" class="headerlink" title="了解一下jstack"></a>了解一下jstack</h3><h4 id="仅有的命令"><a href="#仅有的命令" class="headerlink" title="仅有的命令"></a>仅有的命令</h4><p>获取java应用的进程号：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">命令一：jps</span><br><span class="line">命令二：ps -ef | grep &quot;java&quot;</span><br></pre></td></tr></table></figure>
+<p>使用jstack获取调用快照：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">jstack [option] pid</span><br><span class="line">参数：</span><br><span class="line">-F 强制打印堆栈</span><br><span class="line">-m 打印java 和 native（C++） 堆栈信息</span><br><span class="line">-l 打印额外的信息，包括锁信息</span><br></pre></td></tr></table></figure>
+<h3 id="从库偶现读取时间过长的现象与原因"><a href="#从库偶现读取时间过长的现象与原因" class="headerlink" title="从库偶现读取时间过长的现象与原因"></a>从库偶现读取时间过长的现象与原因</h3><blockquote>
+<p>现象：会在读取记录的时候卡住7、8秒，一共两处，会导致接口耗时14秒左右</p>
+</blockquote>
+<p><img src="/../images/slave-db-readonly-long-time/first_shot.png"><br><img src="/../images/slave-db-readonly-long-time/second_shot.png"><br><img src="/../images/slave-db-readonly-long-time/third_shot.png"></p>
+<blockquote>
+<p>个人的解读：</p>
+</blockquote>
+<ol>
+<li>线程是处于运行状态，可以排除线程的问题。</li>
+<li>主要的时间是卡在findColumn方法上，除了上面几个jstack的快照文件外，其实还有卡在connection的快照文件，当时忘记截图了。</li>
+<li>提早加上事务后，即锁定了主库，不会出现这个现象。</li>
+<li>偶现</li>
+</ol>
+<p>基于以上分析，得出结论：应该是数据源切换的性能问题，项目中数据源切换的源码是在网上随意抄的，使用AbstractRoutingDataSource时，该方式本身存在缓存问题。</p>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://xxg98.github.io/2024/08/13/slave-db-readonly-long-time/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+    
+      <a href="/2024/07/14/start/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">音乐</div>
+      </a>
+    
+  </nav>
+
+  
+   
+  
+   
+    <script src="https://cdn.staticfile.org/twikoo/1.4.18/twikoo.all.min.js"></script>
+    <div id="twikoo" class="twikoo"></div>
+    <script>
+        twikoo.init({
+            envId: ""
+        })
+    </script>
+ 
+</article>
+
 </section>
       <footer class="footer">
   <div class="outer">
@@ -230,6 +353,22 @@
 <script src="/js/lazyload.min.js"></script>
 
 <!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
 
 <script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
 <link
