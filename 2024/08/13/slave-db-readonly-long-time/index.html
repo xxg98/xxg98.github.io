@@ -80,7 +80,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">288</span>
+            <span class="post-count">311</span>
         </span>
     </span>
 
@@ -118,7 +118,7 @@
 <p>个人的解读：</p>
 </blockquote>
 <ol>
-<li>线程是处于运行状态，可以排除线程的问题。</li>
+<li>线程是处于运行状态，可以排除线程的问题(虽然Runnable又分为Ready、Running，但根据后面的情况仍然可以得出结论)。</li>
 <li>主要的时间是卡在findColumn方法上，除了上面几个jstack的快照文件外，其实还有卡在connection的快照文件，当时忘记截图了。</li>
 <li>提早加上事务后，即锁定了主库，不会出现这个现象。</li>
 <li>偶现</li>
