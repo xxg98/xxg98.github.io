@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <meta charset="utf-8" />
+        
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>SSM项目改SpringBoot |  Yan Yonghao的博客</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/images/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    </head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-ssm2springboot"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  SSM项目改SpringBoot
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2024/09/01/ssm2springboot/" class="article-date">
+  <time datetime="2024-09-01T13:40:35.000Z" itemprop="datePublished">2024-09-01</time>
+</a>   
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">4.3k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">20 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>SSM项目改SpringBoot的经历记录，注意点挺多的</p>
+<span id="more"></span>
+
+<h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>因旧项目架构烂到了根，所以本次迁移的目标是：</p>
+<ol>
+<li>尽量少动旧项目的代码，即尽量以原有的逻辑运行起来</li>
+<li>尽量少的bug</li>
+</ol>
+<h3 id="核心架构迁移"><a href="#核心架构迁移" class="headerlink" title="核心架构迁移"></a>核心架构迁移</h3><p>由于旧项目是古早时买来的，里面做了一些奇葩封装，会有一些不计后果的代码，底层讲究的是，虽然稀烂，不，不能说烂，是之前的开发人员也不知道怎么回事，反正运行起来了，因此，本人不幸成为了接盘侠(微笑)。</p>
+<h4 id="将旧项目基于Mybatis、github上的第三方框架封装-打的私有jar包-以及多数据源框架-旧项目在网上抄的-迁移为Mybatis-Plus和另外的多数据源组件"><a href="#将旧项目基于Mybatis、github上的第三方框架封装-打的私有jar包-以及多数据源框架-旧项目在网上抄的-迁移为Mybatis-Plus和另外的多数据源组件" class="headerlink" title="将旧项目基于Mybatis、github上的第三方框架封装(打的私有jar包)以及多数据源框架(旧项目在网上抄的)迁移为Mybatis-Plus和另外的多数据源组件"></a>将旧项目基于Mybatis、github上的第三方框架封装(打的私有jar包)以及多数据源框架(旧项目在网上抄的)迁移为Mybatis-Plus和另外的多数据源组件</h4><h5 id="github上的第三方框架私有封装的SqlSession-只有本地jar包，无源码，下方是jar包反编译的"><a href="#github上的第三方框架私有封装的SqlSession-只有本地jar包，无源码，下方是jar包反编译的" class="headerlink" title="github上的第三方框架私有封装的SqlSession(只有本地jar包，无源码，下方是jar包反编译的)"></a>github上的第三方框架私有封装的SqlSession(只有本地jar包，无源码，下方是jar包反编译的)</h5><img src="/../images/ssm2springboot/third_private_jar.png" width=80% />
+<img src="/../images/ssm2springboot/third_private_jar2.png" width=80% />
+<img src="/../images/ssm2springboot/third_private_jar3.png" width=80% />
+<img src="/../images/ssm2springboot/third_private_jar4.png" width=80% />
+可以看出是单独注入了两个SqlSession：`sqlSessionMain、sqlSessionRead`
+
+<h5 id="多数据源切换-旧项目在网上抄的"><a href="#多数据源切换-旧项目在网上抄的" class="headerlink" title="多数据源切换(旧项目在网上抄的)"></a>多数据源切换(旧项目在网上抄的)</h5><p>DataSourceAspect</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br></pre></td><td class="code"><pre><span class="line">package com.yizhilu.os.aop;</span><br><span class="line"></span><br><span class="line">import org.apache.commons.lang3.StringUtils;</span><br><span class="line">import org.aspectj.lang.JoinPoint;</span><br><span class="line">import org.springframework.transaction.interceptor.NameMatchTransactionAttributeSource;</span><br><span class="line">import org.springframework.transaction.interceptor.TransactionAttribute;</span><br><span class="line">import org.springframework.transaction.interceptor.TransactionAttributeSource;</span><br><span class="line">import org.springframework.transaction.interceptor.TransactionInterceptor;</span><br><span class="line">import org.springframework.util.PatternMatchUtils;</span><br><span class="line">import org.springframework.util.ReflectionUtils;</span><br><span class="line"></span><br><span class="line">import java.lang.reflect.Field;</span><br><span class="line">import java.util.ArrayList;</span><br><span class="line">import java.util.Arrays;</span><br><span class="line">import java.util.List;</span><br><span class="line">import java.util.Map;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">/**</span><br><span class="line"> * Created by zds on 2019/4/23.</span><br><span class="line"> */</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">public class DataSourceAspect &#123;</span><br><span class="line"></span><br><span class="line">    private List&lt;String&gt; slaveMethodPattern = new ArrayList&lt;String&gt;();</span><br><span class="line"></span><br><span class="line">    private static final String[] defaultSlaveMethodStart = new String[]&#123; &quot;query&quot;, &quot;find&quot;, &quot;get&quot; ,&quot;select&quot;,&quot;list&quot;,&quot;,load&quot;,&quot;count&quot;,&quot;check&quot;&#125;;</span><br><span class="line">    private static final String[] defaultExamMethodStart = new String[]&#123; &quot;examv2&quot;&#125;;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    private String[] slaveMethodStart;</span><br><span class="line"></span><br><span class="line">    private String[] examMethodStart;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 读取事务管理中的策略</span><br><span class="line">     *</span><br><span class="line">     * @param txAdvice</span><br><span class="line">     * @throws Exception</span><br><span class="line">     */</span><br><span class="line">    @SuppressWarnings(&quot;unchecked&quot;)</span><br><span class="line">    public void setTxAdvice(TransactionInterceptor txAdvice) throws Exception &#123;</span><br><span class="line">        if (txAdvice == null) &#123;</span><br><span class="line">            // 没有配置事务管理策略</span><br><span class="line">            return;</span><br><span class="line">        &#125;</span><br><span class="line">        //从txAdvice获取到策略配置信息</span><br><span class="line">        TransactionAttributeSource transactionAttributeSource = txAdvice.getTransactionAttributeSource();</span><br><span class="line">        if (!(transactionAttributeSource instanceof NameMatchTransactionAttributeSource)) &#123;</span><br><span class="line">            return;</span><br><span class="line">        &#125;</span><br><span class="line">        //使用反射技术获取到NameMatchTransactionAttributeSource对象中的nameMap属性值</span><br><span class="line">        NameMatchTransactionAttributeSource matchTransactionAttributeSource = (NameMatchTransactionAttributeSource) transactionAttributeSource;</span><br><span class="line">        Field nameMapField = ReflectionUtils.findField(NameMatchTransactionAttributeSource.class, &quot;nameMap&quot;);</span><br><span class="line">        nameMapField.setAccessible(true); //设置该字段可访问</span><br><span class="line">        //获取nameMap的值</span><br><span class="line">        Map&lt;String, TransactionAttribute&gt; map = (Map&lt;String, TransactionAttribute&gt;) nameMapField.get(matchTransactionAttributeSource);</span><br><span class="line"></span><br><span class="line">        //遍历nameMap</span><br><span class="line">        for (Map.Entry&lt;String, TransactionAttribute&gt; entry : map.entrySet()) &#123;</span><br><span class="line">            if (!entry.getValue().isReadOnly()) &#123;//判断之后定义了ReadOnly的策略才加入到slaveMethodPattern</span><br><span class="line">                continue;</span><br><span class="line">            &#125;</span><br><span class="line">            slaveMethodPattern.add(entry.getKey());</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 在进入Service方法之前执行</span><br><span class="line">     *</span><br><span class="line">     * @param point 切面对象</span><br><span class="line">     */</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 前置通知</span><br><span class="line">     */</span><br><span class="line">    public void before(JoinPoint point) &#123;</span><br><span class="line">        // 获取到当前执行的方法名</span><br><span class="line">        String methodName = point.getSignature().getName();</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        //判断是否是读库</span><br><span class="line">        boolean isSlave = false;</span><br><span class="line"></span><br><span class="line">        if (slaveMethodPattern.isEmpty()) &#123;</span><br><span class="line">            // 当前Spring容器中没有配置事务策略，采用方法名匹配方式</span><br><span class="line">            isSlave = isSlave(methodName);</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            // 使用策略规则匹配</span><br><span class="line">            for (String mappedName : slaveMethodPattern) &#123;</span><br><span class="line"></span><br><span class="line">                if (isMatch(methodName, mappedName)) &#123;</span><br><span class="line"></span><br><span class="line">                    isSlave = true;</span><br><span class="line">                    break;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        if (isSlave) &#123;</span><br><span class="line">            // 标记为读库</span><br><span class="line">            DynamicDataSourceHolder.markSlave();</span><br><span class="line">        &#125;else if (isExam(methodName))&#123;</span><br><span class="line">            // 标记为题库</span><br><span class="line">            DynamicDataSourceHolder.markExam();</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            // 标记为写库</span><br><span class="line">            DynamicDataSourceHolder.markMaster();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    public void after(JoinPoint point) &#123;</span><br><span class="line">        // 标记为主库 //用完了就切换回来</span><br><span class="line">        DynamicDataSourceHolder.markMaster();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 判断是否为读库</span><br><span class="line">     *</span><br><span class="line">     * @param methodName</span><br><span class="line">     * @return</span><br><span class="line">     */</span><br><span class="line">    private Boolean isSlave(String methodName) &#123;</span><br><span class="line">        // 方法名以query、find、get开头的方法名走从库</span><br><span class="line">        return StringUtils.startsWithAny(methodName, getSlaveMethodStart());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 判断是否为题库</span><br><span class="line">     *</span><br><span class="line">     * @param methodName</span><br><span class="line">     * @return</span><br><span class="line">     */</span><br><span class="line">    private Boolean isExam(String methodName) &#123;</span><br><span class="line">        // 方法名以exam开头的方法名走题库</span><br><span class="line">        return StringUtils.startsWithAny(methodName, getExamMethodStart());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 通配符匹配</span><br><span class="line">     *</span><br><span class="line">     * Return if the given method name matches the mapped name.</span><br><span class="line">     * &lt;p&gt;</span><br><span class="line">     * The default implementation checks for &quot;xxx*&quot;, &quot;*xxx&quot; and &quot;*xxx*&quot; matches, as well as direct</span><br><span class="line">     * equality. Can be overridden in subclasses.</span><br><span class="line">     *</span><br><span class="line">     * @param methodName the method name of the class</span><br><span class="line">     * @param mappedName the name in the descriptor</span><br><span class="line">     * @return if the names match</span><br><span class="line">     * @see PatternMatchUtils#simpleMatch(String, String)</span><br><span class="line">     */</span><br><span class="line">    protected boolean isMatch(String methodName, String mappedName) &#123;</span><br><span class="line">        return PatternMatchUtils.simpleMatch(mappedName, methodName);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 用户指定slave的方法名前缀</span><br><span class="line">     * @param slaveMethodStart</span><br><span class="line">     */</span><br><span class="line">    public void setSlaveMethodStart(String[] slaveMethodStart) &#123;</span><br><span class="line">        this.slaveMethodStart = slaveMethodStart;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public String[] getSlaveMethodStart() &#123;</span><br><span class="line">        if(this.slaveMethodStart == null)&#123;</span><br><span class="line">            // 没有指定，使用默认</span><br><span class="line">            return defaultSlaveMethodStart;</span><br><span class="line">        &#125;</span><br><span class="line">        return slaveMethodStart;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    public void setExamMethodStart(String[] examMethodStart) &#123;</span><br><span class="line">        this.examMethodStart = examMethodStart;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    public String[] getExamMethodStart() &#123;</span><br><span class="line">        if(this.examMethodStart == null)&#123;</span><br><span class="line">            // 没有指定，使用默认</span><br><span class="line">            return defaultExamMethodStart;</span><br><span class="line">        &#125;</span><br><span class="line">        return examMethodStart;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>DynamicDataSource</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">package com.yizhilu.os.aop;</span><br><span class="line"></span><br><span class="line">import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;</span><br><span class="line"></span><br><span class="line">/**</span><br><span class="line"> * Created by zds on 2019/4/23.</span><br><span class="line"> */</span><br><span class="line">public class DynamicDataSource extends AbstractRoutingDataSource &#123;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    protected Object determineCurrentLookupKey() &#123;</span><br><span class="line">        // 使用DynamicDataSourceHolder保证线程安全，并且得到当前线程中的数据源key</span><br><span class="line">        return DynamicDataSourceHolder.getDataSourceKey();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>DynamicDataSourceHolder</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line">package com.yizhilu.os.aop;</span><br><span class="line"></span><br><span class="line">/**</span><br><span class="line"> * Created by zds on 2019/4/23.</span><br><span class="line"> */</span><br><span class="line">public class DynamicDataSourceHolder &#123;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    //写库对应的数据源key</span><br><span class="line">    private static final String MASTER = &quot;master&quot;;</span><br><span class="line">    //读库对应的数据源key</span><br><span class="line">    private static final String SLAVE = &quot;slave&quot;;</span><br><span class="line">    //题库对应的数据源key</span><br><span class="line">    private static final String EXAM = &quot;exam&quot;;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    //使用ThreadLocal记录当前线程的数据源key</span><br><span class="line">    private static final ThreadLocal&lt;String&gt; holder = new ThreadLocal&lt;String&gt;();</span><br><span class="line">    /**</span><br><span class="line">     * 设置数据源key</span><br><span class="line">     * @param key</span><br><span class="line">     */</span><br><span class="line">    public static void putDataSourceKey(String key) &#123;</span><br><span class="line">        holder.set(key);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 获取数据源key</span><br><span class="line">     * @return</span><br><span class="line">     */</span><br><span class="line">    public static String getDataSourceKey() &#123;</span><br><span class="line">        return holder.get();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 标记写库</span><br><span class="line">     */</span><br><span class="line">    public static void markMaster()&#123;</span><br><span class="line">        putDataSourceKey(MASTER);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 标记读库</span><br><span class="line">     */</span><br><span class="line">    public static void markSlave()&#123;</span><br><span class="line">        putDataSourceKey(SLAVE);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 标记题库</span><br><span class="line">     */</span><br><span class="line">    public static void markExam()&#123;</span><br><span class="line">        putDataSourceKey(EXAM);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>可以看出是网上抄的多数据源切换代码，核心是：<code>ThreadLocal、AbstractRoutingDataSource</code></p>
+<h5 id="旧项目的多数据源和事务配置"><a href="#旧项目的多数据源和事务配置" class="headerlink" title="旧项目的多数据源和事务配置"></a>旧项目的多数据源和事务配置</h5><blockquote>
+<p>多数据源配置：</p>
+</blockquote>
+<img src="/../images/ssm2springboot/old_multiple_datasource_config.png" width=60% />
+<img src="/../images/ssm2springboot/old_multiple_datasource_config2.png" width=60% />
+<img src="/../images/ssm2springboot/old_multiple_datasource_config3.png" width=60% />
+<img src="/../images/ssm2springboot/old_multiple_datasource_config4.png" width=60% />
+<img src="/../images/ssm2springboot/old_multiple_datasource_config5.png" width=60% />
+<img src="/../images/ssm2springboot/old_multiple_datasource_config6.png" width=60% />
+<img src="/../images/ssm2springboot/old_multiple_datasource_config7.png" width=60% />
+<img src="/../images/ssm2springboot/old_multiple_datasource_config8.png" width=60% />
+
+<blockquote>
+<p>事务配置(事务拦截器配置了两次，抄都不认真抄)：</p>
+</blockquote>
+<p>第一次：<br><img src="/../images/ssm2springboot/old_first_transactional_config.png" width=60% /></p>
+<p>第二次：<br><img src="/../images/ssm2springboot/old_second_transactional_config.png" width=60% /><br><img src="/../images/ssm2springboot/old_second_transactional_config2.png" width=60% /></p>
+<h5 id="旧项目封装Mybatis、多数据源和事务配置总结"><a href="#旧项目封装Mybatis、多数据源和事务配置总结" class="headerlink" title="旧项目封装Mybatis、多数据源和事务配置总结"></a>旧项目封装Mybatis、多数据源和事务配置总结</h5><ol>
+<li>没有为github上的第三方框架生成<code>sqlSessionRead</code>，只生成了<code>sqlSessionMain</code></li>
+<li>根据DynamicDataSourceHolder可知，配置的readDataSource数据源根本没有使用</li>
+<li>事务胡乱配置：事务拦截器配置了两次，并且没有处理多数据源的事务问题，同事说的是不会在同一个Service中切换数据源</li>
+</ol>
+<h5 id="迁移为Mybatis-Plus和另外的多数据源组件，以及寻找私有jar包的源码-噩梦难度"><a href="#迁移为Mybatis-Plus和另外的多数据源组件，以及寻找私有jar包的源码-噩梦难度" class="headerlink" title="迁移为Mybatis-Plus和另外的多数据源组件，以及寻找私有jar包的源码(噩梦难度)"></a>迁移为Mybatis-Plus和另外的多数据源组件，以及寻找私有jar包的源码(噩梦难度)</h5><blockquote>
+<p>Mybatis-Plus配置：</p>
+</blockquote>
+<img src="/../images/ssm2springboot/Mybatis-Plus_config.png" width=60% />
+
+<blockquote>
+<p>多数据源组件dynamic-datasource-spring-boot-starter:</p>
+</blockquote>
+<img src="/../images/ssm2springboot/new_mutiple_datasource_config.png" width=60% />
+
+<p>最噩梦的事情来了，我需要根据DataSourceAspect里定义的根据方法的前缀在每一个对应的方法写<code>@DS(&quot;xxxDataSource&quot;)</code>，以及根据<code>txAdvice</code>和<code>transactionInterceptor.transactionAttributes</code>定义的根据方法的前缀在每一个对应的方法写<code>@DSTransactioanl</code>，就这个事情，加了一周的班</p>
+<blockquote>
+<p>寻找私有jar包的源码(记住com.yizhilu这个这个坐标，以后离得远远的)</p>
+</blockquote>
+<p>需求：有可能会改jar中的源码</p>
+<ol>
+<li>最开始打算用jar包被反编译后的代码，经过摸索，反编译后的代码，虽然会有逻辑和变量命名和源码对不上，但是实现的功能不会改变，也能凑合用</li>
+<li>最后，为什么知道旧项目核心的私有jar包来自github上的第三方框架，是因为根据注释在github上搜到了原作者的仓库，而且，最要命的是，这个框架还有好几个版本的仓库，于是，又得用肉眼去大概比较一下用哪个版本，防止有人在仓库代码基础上做了手脚然后打成私有jar包留坑，干完这个项目，眼睛废了</li>
+<li>此外，alipay私有jar包的相关源码也是在github上找到的</li>
+</ol>
+<h3 id="web-xml配置迁移"><a href="#web-xml配置迁移" class="headerlink" title="web.xml配置迁移"></a>web.xml配置迁移</h3><h4 id="CharacterEncodingFilter配置"><a href="#CharacterEncodingFilter配置" class="headerlink" title="CharacterEncodingFilter配置"></a>CharacterEncodingFilter配置</h4><blockquote>
+<p>旧配置如下：</p>
+</blockquote>
+<!-- ![](./images/ssm2springboot/old_character_config.png) -->
+<img src="/../images/ssm2springboot/old_character_config.png" width=80% />
+
+<blockquote>
+<p>新配置如下：</p>
+</blockquote>
+<!-- ![](./images/ssm2springboot/new_character_config.png) -->
+<img src="/../images/ssm2springboot/new_character_config.png" width=80% />
+
+<h4 id="error-page配置"><a href="#error-page配置" class="headerlink" title="error-page配置"></a>error-page配置</h4><blockquote>
+<p>旧配置如下：</p>
+</blockquote>
+<!-- ![](./images/ssm2springboot/old_error_page.png) -->
+<!-- ![](./images/ssm2springboot/old_error_page2.png) -->
+<img src="/../images/ssm2springboot/old_error_page.png" width=80% />
+<img src="/../images/ssm2springboot/old_error_page2.png" width=80% />
+
+<blockquote>
+<p>新配置如下：</p>
+</blockquote>
+<!-- ![](./images/ssm2springboot/new_error_page.png) -->
+<!-- ![](./images/ssm2springboot/new_error_page2.png) -->
+<img src="/../images/ssm2springboot/new_error_page.png" width=80% />
+<img src="/../images/ssm2springboot/new_error_page2.png" width=80% />
+ps：此处迁移后的配置只有通用的error和404，是因为在旧项目中，其他的错误页面经实测，不会有机会出现
+
+<h4 id="welcome-file-list首页的配置"><a href="#welcome-file-list首页的配置" class="headerlink" title="welcome-file-list首页的配置"></a>welcome-file-list首页的配置</h4><blockquote>
+<p>旧配置如下：</p>
+</blockquote>
+<!-- ![](./images/ssm2springboot/old_home_page_config.png) -->
+<img src="/../images/ssm2springboot/old_home_page_config.png" width=80% />
+
+<blockquote>
+<p>新配置如下：</p>
+</blockquote>
+<!-- ![](./images/ssm2springboot/new_home_page_config.png) -->
+<img src="/../images/ssm2springboot/new_home_page_config.png" width=80% />
+这样配置的原因在于，旧项目是jsp页面，已经有配置定义好页面后缀为.jsp了，想要将首页配置为.html就只能采用这种方式了
+
+<h4 id="迁移过滤器"><a href="#迁移过滤器" class="headerlink" title="迁移过滤器"></a>迁移过滤器</h4><blockquote>
+<p>旧配置如下：</p>
+</blockquote>
+<!-- ![](./images/ssm2springboot/old_filter_config.png) -->
+<img src="/../images/ssm2springboot/old_filter_config.png" width=80% />
+
+<blockquote>
+<p>新配置如下：</p>
+</blockquote>
+<!-- ![](../images/ssm2springboot/new_filter_config.png) -->
+<img src="/../images/ssm2springboot/new_filter_config.png" width=80% />
+<!-- ![](../images/ssm2springboot/new_filter_config2.png) -->
+<img src="/../images/ssm2springboot/new_filter_config2.png" width=80% />
+其中SiteMeshFilter和sql防注入过滤器正常迁移，而跨域在SpringBoot中有专门的配置。
+注意：SiteMeshFilter拦截了所有路径，配合decorators.xml完成页面构成，所以该过滤器无法删除(旧项目很无奈)，并且十分影响系统性能，该旧项目使用了github上的一个开源框架中，decorators.xml便是其中的文件，有兴趣可以去看看
+
+<h4 id="可以弃用的配置-经查资料可以弃用的，不会影响新项目运行"><a href="#可以弃用的配置-经查资料可以弃用的，不会影响新项目运行" class="headerlink" title="可以弃用的配置(经查资料可以弃用的，不会影响新项目运行)"></a>可以弃用的配置(经查资料可以弃用的，不会影响新项目运行)</h4><ol>
+<li>ContextLoaderListener</li>
+<li>IntrospectorCleanupListener</li>
+<li>trim-directive-whitespaces <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;jsp-config&gt;</span><br><span class="line">    &lt;jsp-property-group&gt;</span><br><span class="line">        &lt;url-pattern&gt;*.jsp&lt;/url-pattern&gt;</span><br><span class="line">        &lt;trim-directive-whitespaces&gt;true&lt;/trim-directive-whitespaces&gt;</span><br><span class="line">    &lt;/jsp-property-group&gt;</span><br><span class="line">&lt;/jsp-config&gt;</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="jsp配置和xml中Bean迁移"><a href="#jsp配置和xml中Bean迁移" class="headerlink" title="jsp配置和xml中Bean迁移"></a>jsp配置和xml中Bean迁移</h3><h4 id="jsp配置"><a href="#jsp配置" class="headerlink" title="jsp配置"></a>jsp配置</h4><blockquote>
+<p>旧配置如下：</p>
+</blockquote>
+<img src="/../images/ssm2springboot/old_jsp_config.png" width=80% />
+
+<blockquote>
+<p>新配置如下：</p>
+</blockquote>
+<img src="/../images/ssm2springboot/new_jsp_config.png" width=80% />
+
+<p>在迁移webapp目录时，直接copy就行，同时检查不要漏掉lib目录下的本地jar</p>
+<h4 id="Bean迁移"><a href="#Bean迁移" class="headerlink" title="Bean迁移"></a>Bean迁移</h4><p>Bean迁移时，按照xml和注解两种方式对应的属性注入好就行，不懂的地方就Google一下</p>
+<h3 id="spring-mvc-xml配置迁移"><a href="#spring-mvc-xml配置迁移" class="headerlink" title="spring-mvc.xml配置迁移"></a>spring-mvc.xml配置迁移</h3><h4 id="context-component-scan"><a href="#context-component-scan" class="headerlink" title="context:component-scan"></a>context:component-scan</h4><blockquote>
+<p>旧配置如下：</p>
+</blockquote>
+<img src="/../images/ssm2springboot/context-component-scan.png" width=80% />
+
+<blockquote>
+<p>新配置如下：</p>
+</blockquote>
+<p><code>@SpringBootApplication</code><br>不解释</p>
+<h4 id="mvc-annotation-driven、mvc-message-converters和contentNegotiationManager"><a href="#mvc-annotation-driven、mvc-message-converters和contentNegotiationManager" class="headerlink" title="mvc:annotation-driven、mvc:message-converters和contentNegotiationManager"></a>mvc:annotation-driven、mvc:message-converters和contentNegotiationManager</h4><blockquote>
+<p>旧配置如下：</p>
+</blockquote>
+<img src="/../images/ssm2springboot/mvc-annotation-driven.png" width=80% />
+<img src="/../images/ssm2springboot/contentNegotiationManager.png" width=80% />
+
+<blockquote>
+<p>新配置如下：</p>
+</blockquote>
+<img src="/../images/ssm2springboot/new_converters_config.png" width=80% />
+<img src="/../images/ssm2springboot/new_negotiation.png" width=80% />
+ps：
+1. springmvc注解驱动、消息转换器、内容协商配置
+2. 因为追求尽量少出bug，否则，该配置不迁移也可
+3. 注意configureMessageConverters和extendMessageConverters方法的区别
+
+<h4 id="mvc-default-servlet-handler-放行静态资源"><a href="#mvc-default-servlet-handler-放行静态资源" class="headerlink" title="mvc:default-servlet-handler(放行静态资源)"></a>mvc:default-servlet-handler(放行静态资源)</h4><blockquote>
+<p>旧配置如下：</p>
+</blockquote>
+<img src="/../images/ssm2springboot/mvc-default-servlet-handler.png" width=80% />
+
+<blockquote>
+<p>新配置不用做任何配置，原因如下：</p>
+</blockquote>
+<ol>
+<li>SpringBoot的默认静态资源路径：classpath:&#x2F;META-INF&#x2F;resources&#x2F;，classpath:&#x2F;resources&#x2F;，classpath:&#x2F;static&#x2F;，classpath:&#x2F;public&#x2F;，&#x2F;，优先级从左到右依次降低，“&#x2F;”表示webapp目录，即webapp中的静态文件可以直接访问。</li>
+<li>如果做了这个配置：<img src="/../images/ssm2springboot/new_fake_static_resource_config.png" width=80% />
+其他地方反而会报错</li>
+</ol>
+<p>ps：因此，不需要在配置文件(针对SpringBoot的高低版本有两种改变方式)或WebMvcConfig(实现了WebMvcConfigurer接口，实现addResourceHandlers方法)中改任何配置</p>
+<h4 id="AnnotationMethodHandlerAdapter"><a href="#AnnotationMethodHandlerAdapter" class="headerlink" title="AnnotationMethodHandlerAdapter"></a>AnnotationMethodHandlerAdapter</h4><blockquote>
+<p>旧配置如下：</p>
+</blockquote>
+<img src="/../images/ssm2springboot/AnnotationMethodHandlerAdapter.png" width=80% />
+
+<blockquote>
+<p>新配置不用做任何配置，原因如下：</p>
+</blockquote>
+<p>该配置与mvc:annotation-driven、RequestMappingHandlerAdapter有关；在SpringBoot中，已自动实现；该类已过时。</p>
+<h4 id="CommonsMultipartResolver"><a href="#CommonsMultipartResolver" class="headerlink" title="CommonsMultipartResolver"></a>CommonsMultipartResolver</h4><blockquote>
+<p>旧配置如下：</p>
+</blockquote>
+<img src="/../images/ssm2springboot/CommonsMultipartResolver.png" width=80% />
+
+<blockquote>
+<p>新配置如下：</p>
+</blockquote>
+<img src="/../images/ssm2springboot/new_file_upload_config.png" width=80% />
+
+<h4 id="拦截器迁移"><a href="#拦截器迁移" class="headerlink" title="拦截器迁移"></a>拦截器迁移</h4><blockquote>
+<p>旧配置如下：</p>
+</blockquote>
+<img src="/../images/ssm2springboot/old_interceptor_config.png" width=80% />
+
+<blockquote>
+<p>新配置如下：</p>
+</blockquote>
+<img src="/../images/ssm2springboot/new_interceptor_config.png" width=80% />
+<img src="/../images/ssm2springboot/new_interceptor_config2.png" width=80% />
+ps：需要注意的是，拦截器需要单独注册成Bean，因为拦截器里面注入了其他Bean。
+
+<h3 id="去掉pom中不会再用的依赖以及打包方式适配迁移-开发时内置tomcat，部署时外置tomcat"><a href="#去掉pom中不会再用的依赖以及打包方式适配迁移-开发时内置tomcat，部署时外置tomcat" class="headerlink" title="去掉pom中不会再用的依赖以及打包方式适配迁移(开发时内置tomcat，部署时外置tomcat)"></a>去掉pom中不会再用的依赖以及打包方式适配迁移(开发时内置tomcat，部署时外置tomcat)</h3><h4 id="去掉pom中不会再用的依赖"><a href="#去掉pom中不会再用的依赖" class="headerlink" title="去掉pom中不会再用的依赖"></a>去掉pom中不会再用的依赖</h4><p>经过高强度查找资料，迁移时删除掉不会再用到的依赖，比如(冰山一角，还有很多的重复依赖)：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">&lt;!-- xstream --&gt;</span><br><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;com.thoughtworks.xstream&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;xstream&lt;/artifactId&gt;</span><br><span class="line">    &lt;version&gt;1.4.7&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br><span class="line">&lt;!-- quartz --&gt;</span><br><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;org.quartz-scheduler&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;quartz&lt;/artifactId&gt;</span><br><span class="line">    &lt;version&gt;2.2.1&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br><span class="line">&lt;!-- javamelody --&gt;</span><br><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;net.bull.javamelody&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;javamelody-core&lt;/artifactId&gt;</span><br><span class="line">    &lt;version&gt;1.86.0&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br></pre></td></tr></table></figure>
+<h4 id="打包插件"><a href="#打包插件" class="headerlink" title="打包插件"></a>打包插件</h4><p>旧项目的打包插件杂七杂八，经过查资料和实践，最终的配置如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line">&lt;build&gt;</span><br><span class="line">        &lt;finalName&gt;任意名字&lt;/finalName&gt;</span><br><span class="line">        &lt;resources&gt;</span><br><span class="line">            &lt;resource&gt;</span><br><span class="line">                &lt;directory&gt;src/main/resources&lt;/directory&gt;</span><br><span class="line">                &lt;filtering&gt;true&lt;/filtering&gt;</span><br><span class="line">            &lt;/resource&gt;</span><br><span class="line">        &lt;/resources&gt;</span><br><span class="line">        &lt;plugins&gt;</span><br><span class="line">            &lt;plugin&gt;</span><br><span class="line">                &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;</span><br><span class="line">                &lt;artifactId&gt;maven-compiler-plugin&lt;/artifactId&gt;</span><br><span class="line">                &lt;configuration&gt;</span><br><span class="line">                    &lt;source&gt;1.8&lt;/source&gt;</span><br><span class="line">                    &lt;target&gt;1.8&lt;/target&gt;</span><br><span class="line">                &lt;/configuration&gt;</span><br><span class="line">            &lt;/plugin&gt;</span><br><span class="line">            &lt;plugin&gt;</span><br><span class="line">                &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;</span><br><span class="line">                &lt;artifactId&gt;maven-war-plugin&lt;/artifactId&gt;</span><br><span class="line">                &lt;version&gt;3.0.0&lt;/version&gt;</span><br><span class="line">                &lt;configuration&gt;</span><br><span class="line">                    &lt;failOnMissingWebXml&gt;false&lt;/failOnMissingWebXml&gt;</span><br><span class="line">                &lt;/configuration&gt;</span><br><span class="line">            &lt;/plugin&gt;</span><br><span class="line">            &lt;plugin&gt;</span><br><span class="line">                &lt;groupId&gt;org.springframework.boot&lt;/groupId&gt;</span><br><span class="line">                &lt;artifactId&gt;spring-boot-maven-plugin&lt;/artifactId&gt;</span><br><span class="line">                &lt;version&gt;2.4.10&lt;/version&gt;</span><br><span class="line">                &lt;configuration&gt;</span><br><span class="line">                    &lt;!--fork :  如果没有该项配置devtools不会起作用，即应用不会restart --&gt;</span><br><span class="line">                    &lt;fork&gt;false&lt;/fork&gt;</span><br><span class="line">                    &lt;jvmArguments&gt;-Dfile.encoding=UTF-8&lt;/jvmArguments&gt;</span><br><span class="line">                    &lt;addResources&gt;true&lt;/addResources&gt;&lt;!--支持静态文件热部署--&gt;</span><br><span class="line">                &lt;/configuration&gt;</span><br><span class="line">            &lt;/plugin&gt;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">            &lt;plugin&gt;</span><br><span class="line">                &lt;groupId&gt;org.apache.maven.plugins&lt;/groupId&gt;</span><br><span class="line">                &lt;artifactId&gt;maven-resources-plugin&lt;/artifactId&gt;</span><br><span class="line">                &lt;configuration&gt;</span><br><span class="line">                    &lt;encoding&gt;UTF-8&lt;/encoding&gt;</span><br><span class="line">                    &lt;!-- 编译时过滤掉微信证书 --&gt;</span><br><span class="line">                    &lt;nonFilteredFileExtensions&gt;</span><br><span class="line">                        &lt;nonFilteredFileExtension&gt;p12&lt;/nonFilteredFileExtension&gt;</span><br><span class="line">                    &lt;/nonFilteredFileExtensions&gt;</span><br><span class="line">                    &lt;useDefaultDelimiters&gt;true&lt;/useDefaultDelimiters&gt;</span><br><span class="line">                &lt;/configuration&gt;</span><br><span class="line">            &lt;/plugin&gt;</span><br><span class="line"></span><br><span class="line">        &lt;/plugins&gt;</span><br><span class="line">    &lt;/build&gt;</span><br></pre></td></tr></table></figure>
+<h4 id="启动类修改"><a href="#启动类修改" class="headerlink" title="启动类修改"></a>启动类修改</h4><p>继承SpringBootServletInitializer以实现外置tomcat</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">@SpringBootApplication</span><br><span class="line">@EnableScheduling</span><br><span class="line">@EnableTransactionManagement</span><br><span class="line">public class XueYuanApplication extends SpringBootServletInitializer &#123;</span><br><span class="line">    public static void main(String[] args) &#123;</span><br><span class="line">        SpringApplication.run(XueYuanApplication.class, args);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    protected SpringApplicationBuilder configure(SpringApplicationBuilder builder) &#123;</span><br><span class="line">        return builder.sources(XueYuanApplication.class);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h4 id="内置tomcat依附的jsp依赖剔除"><a href="#内置tomcat依附的jsp依赖剔除" class="headerlink" title="内置tomcat依附的jsp依赖剔除"></a>内置tomcat依附的jsp依赖剔除</h4><p>外置tomcat部署时不需要这个依赖</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">    &lt;groupId&gt;org.apache.tomcat.embed&lt;/groupId&gt;</span><br><span class="line">    &lt;artifactId&gt;tomcat-embed-jasper&lt;/artifactId&gt;</span><br><span class="line">    &lt;!--只有编译和测试阶段生效--&gt;</span><br><span class="line">    &lt;scope&gt;provided&lt;/scope&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br></pre></td></tr></table></figure>
+
+<h3 id="maven中profiles的迁移-多环境：开发、测试、正式"><a href="#maven中profiles的迁移-多环境：开发、测试、正式" class="headerlink" title="maven中profiles的迁移(多环境：开发、测试、正式)"></a>maven中profiles的迁移(多环境：开发、测试、正式)</h3><p>旧项目中使用的是maven中profiles来区分各个环境：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">&lt;profiles&gt;</span><br><span class="line">    &lt;profile&gt;</span><br><span class="line">        &lt;id&gt;mine&lt;/id&gt;</span><br><span class="line">        &lt;activation&gt;</span><br><span class="line">            &lt;activeByDefault&gt;true&lt;/activeByDefault&gt;</span><br><span class="line">        &lt;/activation&gt;</span><br><span class="line">        &lt;build&gt;</span><br><span class="line">            &lt;filters&gt;</span><br><span class="line">                &lt;filter&gt;src/main/filters/filter-mine.properties&lt;/filter&gt;</span><br><span class="line">            &lt;/filters&gt;</span><br><span class="line">        &lt;/build&gt;</span><br><span class="line">    &lt;/profile&gt;</span><br><span class="line">    &lt;profile&gt;</span><br><span class="line">        &lt;id&gt;test&lt;/id&gt;</span><br><span class="line">        &lt;activation&gt;</span><br><span class="line">            &lt;activeByDefault&gt;false&lt;/activeByDefault&gt;</span><br><span class="line">        &lt;/activation&gt;</span><br><span class="line">        &lt;build&gt;</span><br><span class="line">            &lt;filters&gt;</span><br><span class="line">                &lt;filter&gt;src/main/filters/filter-test.properties&lt;/filter&gt;</span><br><span class="line">            &lt;/filters&gt;</span><br><span class="line">        &lt;/build&gt;</span><br><span class="line">    &lt;/profile&gt;</span><br><span class="line">    &lt;profile&gt;</span><br><span class="line">        &lt;id&gt;release&lt;/id&gt;</span><br><span class="line">        &lt;activation&gt;</span><br><span class="line">            &lt;activeByDefault&gt;false&lt;/activeByDefault&gt;</span><br><span class="line">        &lt;/activation&gt;</span><br><span class="line">        &lt;build&gt;</span><br><span class="line">            &lt;filters&gt;</span><br><span class="line">                &lt;filter&gt;src/main/filters/filter-release.properties&lt;/filter&gt;</span><br><span class="line">            &lt;/filters&gt;</span><br><span class="line">        &lt;/build&gt;</span><br><span class="line">    &lt;/profile&gt;</span><br><span class="line">&lt;/profiles&gt;</span><br></pre></td></tr></table></figure>
+<p>在迁移后的项目中决定保留该配置，同时遇到了一个问题：SpringBoot在使用<code>$()</code>读取<code>filter-xxx.properties</code>时，失败了，需要做如下配置：<br><img src="/../images/ssm2springboot/spring_boot_default_delimiter.png" width=80% /></p>
+<p>其中，useDefaultDelimiters设置为true，原因是SpringBoot默认获取变量的方式是<code>@变量名@</code>，通过该方式将其变回<code>$&#123;&#125;</code></p>
+<h3 id="中间价迁移"><a href="#中间价迁移" class="headerlink" title="中间价迁移"></a>中间价迁移</h3><h4 id="RabbitMQ配置迁移"><a href="#RabbitMQ配置迁移" class="headerlink" title="RabbitMQ配置迁移"></a>RabbitMQ配置迁移</h4><blockquote>
+<p>旧配置如下：</p>
+</blockquote>
+<img src="/../images/ssm2springboot/old_mq_config.png" width=80% />
+
+<blockquote>
+<p>新配置如下：</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br></pre></td><td class="code"><pre><span class="line">package com.zh.xueyuan.globalconfig;</span><br><span class="line"></span><br><span class="line">import com.zh.xueyuan.common.rabbitmq.MessageConsumer;</span><br><span class="line">import org.springframework.amqp.core.*;</span><br><span class="line">import org.springframework.amqp.rabbit.connection.CachingConnectionFactory;</span><br><span class="line">import org.springframework.amqp.rabbit.connection.ConnectionFactory;</span><br><span class="line">import org.springframework.amqp.rabbit.core.RabbitAdmin;</span><br><span class="line">import org.springframework.amqp.rabbit.core.RabbitTemplate;</span><br><span class="line">import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;</span><br><span class="line">import org.springframework.amqp.rabbit.listener.adapter.MessageListenerAdapter;</span><br><span class="line">import org.springframework.beans.factory.annotation.Qualifier;</span><br><span class="line">import org.springframework.beans.factory.annotation.Value;</span><br><span class="line">import org.springframework.context.annotation.Bean;</span><br><span class="line">import org.springframework.context.annotation.Configuration;</span><br><span class="line"></span><br><span class="line">@Configuration</span><br><span class="line">public class RabbitMqConfig &#123;</span><br><span class="line"></span><br><span class="line">    @Value(&quot;$&#123;rabbit.host&#125;&quot;)</span><br><span class="line">    private String rabbitMqHost;</span><br><span class="line"></span><br><span class="line">    @Value(&quot;$&#123;rabbit.port&#125;&quot;)</span><br><span class="line">    private String rabbitMqPort;</span><br><span class="line"></span><br><span class="line">    @Value(&quot;$&#123;rabbit.username&#125;&quot;)</span><br><span class="line">    private String rabbitMqUsername;</span><br><span class="line"></span><br><span class="line">    @Value(&quot;$&#123;rabbit.password&#125;&quot;)</span><br><span class="line">    private String rabbitMqPassword;</span><br><span class="line"></span><br><span class="line">    @Value(&quot;$&#123;rabbit.vhost&#125;&quot;)</span><br><span class="line">    private String rabbitMqVirtualHost;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    @Bean(&quot;connectionFactory&quot;)</span><br><span class="line">    public ConnectionFactory connectionFactory() &#123;</span><br><span class="line">        CachingConnectionFactory connectionFactory = new CachingConnectionFactory();</span><br><span class="line">        connectionFactory.setHost(rabbitMqHost);</span><br><span class="line">        connectionFactory.setPort(Integer.valueOf(rabbitMqPort));</span><br><span class="line">        connectionFactory.setUsername(rabbitMqUsername);</span><br><span class="line">        connectionFactory.setPassword(rabbitMqPassword);</span><br><span class="line">        connectionFactory.setVirtualHost(rabbitMqVirtualHost);</span><br><span class="line">        return connectionFactory;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Bean(name=&quot;amqpTemplate&quot;)</span><br><span class="line">    public RabbitTemplate rabbitTemplate(@Qualifier(&quot;connectionFactory&quot;)ConnectionFactory connectionFactory) &#123;</span><br><span class="line">        RabbitTemplate template = new RabbitTemplate(connectionFactory);</span><br><span class="line">        template.setExchange(&quot;exchangeMessage&quot;);</span><br><span class="line">        return template;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Bean</span><br><span class="line">    public RabbitAdmin rabbitAdmin(@Qualifier(&quot;connectionFactory&quot;)ConnectionFactory connectionFactory)&#123;</span><br><span class="line">        RabbitAdmin rabbitAdmin = new RabbitAdmin(connectionFactory);</span><br><span class="line">        // 注意，autoStartup 必须设置为 true，否则 Spring 容器不会加载 RabbitAdmin 类</span><br><span class="line">        // 好像默认就是true</span><br><span class="line">        rabbitAdmin.setAutoStartup(true);</span><br><span class="line">        return rabbitAdmin;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Bean</span><br><span class="line">    public Queue defaultQueue() &#123;</span><br><span class="line">        return new Queue(&quot;queueMessage&quot;, true, false, false);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Bean</span><br><span class="line">    public DirectExchange defaultExchange() &#123;</span><br><span class="line">        boolean durable = true;</span><br><span class="line">        boolean autoDelete = false;</span><br><span class="line">        return new DirectExchange(&quot;exchangeMessage&quot;, durable, autoDelete);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    // 使用路由键（routingKey）把队列（Queue）绑定到交换器（Exchange）</span><br><span class="line">    @Bean</span><br><span class="line">    public Binding binding(@Qualifier(&quot;defaultExchange&quot;)DirectExchange direct, @Qualifier(&quot;defaultQueue&quot;)Queue queue) &#123;</span><br><span class="line">        return BindingBuilder.bind(queue).to(direct).with(&quot;queueMessageKey&quot;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Bean(&quot;messageReceiver&quot;)</span><br><span class="line">    public MessageConsumer createMessageConsumer()&#123;</span><br><span class="line">        return new MessageConsumer();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Bean</span><br><span class="line">    public SimpleMessageListenerContainer container(@Qualifier(&quot;connectionFactory&quot;)ConnectionFactory connectionFactory,</span><br><span class="line">                                             @Qualifier(&quot;messageReceiver&quot;) MessageListener listenerAdapter) &#123;</span><br><span class="line">        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();</span><br><span class="line">        container.setConnectionFactory(connectionFactory);</span><br><span class="line">        container.setQueueNames(&quot;queueMessage&quot;);</span><br><span class="line">        container.setMessageListener(listenerAdapter);</span><br><span class="line">        return container;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>基于按原逻辑运行和少动代码的需求，故作此迁移，配置文件的方式应该也行</p>
+<h4 id="Redis配置迁移"><a href="#Redis配置迁移" class="headerlink" title="Redis配置迁移"></a>Redis配置迁移</h4><blockquote>
+<p>旧配置如下：</p>
+</blockquote>
+<img src="/../images/ssm2springboot/old_redis_config.png" width=80% />
+
+<blockquote>
+<p>新配置如下：</p>
+</blockquote>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br></pre></td><td class="code"><pre><span class="line">package com.zh.xueyuan.globalconfig;</span><br><span class="line"></span><br><span class="line">import org.springframework.beans.factory.annotation.Qualifier;</span><br><span class="line">import org.springframework.beans.factory.annotation.Value;</span><br><span class="line">import org.springframework.context.annotation.Bean;</span><br><span class="line">import org.springframework.context.annotation.Configuration;</span><br><span class="line">import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;</span><br><span class="line">import org.springframework.data.redis.core.RedisTemplate;</span><br><span class="line">import org.springframework.data.redis.core.StringRedisTemplate;</span><br><span class="line">import org.springframework.data.redis.support.collections.DefaultRedisMap;</span><br><span class="line"></span><br><span class="line">@Configuration</span><br><span class="line">public class RedisConfig &#123;</span><br><span class="line"></span><br><span class="line">    @Value(&quot;$&#123;redis.host&#125;&quot;)</span><br><span class="line">    private String redisHost;</span><br><span class="line"></span><br><span class="line">    @Value(&quot;$&#123;redis.port&#125;&quot;)</span><br><span class="line">    private String redisPort;</span><br><span class="line"></span><br><span class="line">    @Value(&quot;$&#123;redis.password&#125;&quot;)</span><br><span class="line">    private String redisPassword;</span><br><span class="line"></span><br><span class="line">    @Bean(&quot;connectionRedisFactory&quot;)</span><br><span class="line">    public JedisConnectionFactory connectionFactory() &#123;</span><br><span class="line">        JedisConnectionFactory jedisConnectionFactory = new JedisConnectionFactory();</span><br><span class="line"></span><br><span class="line">        jedisConnectionFactory.setHostName(redisHost);</span><br><span class="line">        jedisConnectionFactory.setPort(Integer.valueOf(redisPort));</span><br><span class="line">        jedisConnectionFactory.setPassword(redisPassword);</span><br><span class="line">        jedisConnectionFactory.setUsePool(true);</span><br><span class="line"></span><br><span class="line">        return jedisConnectionFactory;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Bean(&quot;redisTemplate&quot;)</span><br><span class="line">    public RedisTemplate redisTemplate(@Qualifier(&quot;connectionRedisFactory&quot;) JedisConnectionFactory jedisConnectionFactory)&#123;</span><br><span class="line">        RedisTemplate rt = new RedisTemplate();</span><br><span class="line">        rt.setConnectionFactory(jedisConnectionFactory);</span><br><span class="line">        return rt;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Bean(&quot;redisStringTemplate&quot;)</span><br><span class="line">    public StringRedisTemplate stringRedisTemplate(@Qualifier(&quot;connectionRedisFactory&quot;) JedisConnectionFactory jedisConnectionFactory) &#123;</span><br><span class="line">        StringRedisTemplate redisTemplate = new StringRedisTemplate();</span><br><span class="line">        redisTemplate.setConnectionFactory(jedisConnectionFactory);</span><br><span class="line">        return redisTemplate;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    @Bean(&quot;userRedisMap&quot;)</span><br><span class="line">    public DefaultRedisMap createDefaultRedisMap(@Qualifier(&quot;redisTemplate&quot;) RedisTemplate redisTemplate)&#123;</span><br><span class="line">        DefaultRedisMap defaultRedisMap = new DefaultRedisMap(&quot;USER&quot;, redisTemplate);</span><br><span class="line">        return defaultRedisMap;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>基于按原逻辑运行和少动代码的需求，故作此迁移，配置文件的方式应该也行</p>
+<h3 id="其他配置迁移"><a href="#其他配置迁移" class="headerlink" title="其他配置迁移"></a>其他配置迁移</h3><h4 id="读取额外的properties文件"><a href="#读取额外的properties文件" class="headerlink" title="读取额外的properties文件"></a>读取额外的properties文件</h4><blockquote>
+<p>旧配置如下：</p>
+</blockquote>
+<!-- ![](./images/ssm2springboot/old_read_extra_properties_file.png) -->
+<img src="/../images/ssm2springboot/old_read_extra_properties_file.png" width=80% />
+
+<blockquote>
+<p>新配置如下：</p>
+</blockquote>
+<!-- ![](../images/ssm2springboot/new_read_extra_properties_file.png) -->
+<img src="/../images/ssm2springboot/new_read_extra_properties_file.png" width=80% />
+<!-- <img src=https://i-blog.csdnimg.cn/blog_migrate/c6399f8f84b8620b533da4dfb3b17e35.png /> -->
+
+<h4 id="升级依赖包版本"><a href="#升级依赖包版本" class="headerlink" title="升级依赖包版本"></a>升级依赖包版本</h4><p>旧项目的gson、httpcore包版本过低在SpringBoot中缺少方法无法兼容</p>
+<h4 id="weibo4j源码下载"><a href="#weibo4j源码下载" class="headerlink" title="weibo4j源码下载"></a>weibo4j源码下载</h4><p>旧项目中有使用到微博的一些功能，但是该包却被封在一个私有的jar包中，并且现在明确迁移后的项目不再使用该私有jar包</p>
+<h4 id="防xss"><a href="#防xss" class="headerlink" title="防xss"></a>防xss</h4><ol>
+<li>用spring security，基于csp，内容安全策略，容易对旧项目逻辑造成影响</li>
+<li>用mica-xss，虽然底层还是过滤器，影响性能，但是胜在无缝集成</li>
+</ol>
+<h4 id="设置tomcat不扫描Manifest文件"><a href="#设置tomcat不扫描Manifest文件" class="headerlink" title="设置tomcat不扫描Manifest文件"></a>设置tomcat不扫描Manifest文件</h4><p>高版本会扫描jar包的Manifest文件，会有一些像报错一样的警告，很不好看，解决方法如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">@Bean</span><br><span class="line">public TomcatServletWebServerFactory tomcatFactory() &#123;</span><br><span class="line">    return new TomcatServletWebServerFactory() &#123;</span><br><span class="line">        @Override</span><br><span class="line">        protected void postProcessContext(Context context) &#123;</span><br><span class="line">            ((StandardJarScanner) context.getJarScanner()).setScanManifest(false);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://xxg98.github.io/2024/09/01/ssm2springboot/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+    
+      <a href="/2024/08/13/slave-db-readonly-long-time/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">从库偶现读取时间过长</div>
+      </a>
+    
+  </nav>
+
+  
+   
+  
+   
+    <script src="https://cdn.staticfile.org/twikoo/1.4.18/twikoo.all.min.js"></script>
+    <div id="twikoo" class="twikoo"></div>
+    <script>
+        twikoo.init({
+            envId: ""
+        })
+    </script>
+ 
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2015-2024
+        <i class="ri-heart-fill heart_icon"></i> Yan Yonghao
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s9.cnzz.com/z_stat.php?id=1278069914&amp;web_id=1278069914'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="Yan Yonghao的博客"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/%E6%97%85%E8%A1%8C/">旅行</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/2019/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>
