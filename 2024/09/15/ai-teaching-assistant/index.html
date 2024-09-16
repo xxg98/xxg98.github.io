@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+
+
+<html lang="zh-CN">
+  
+
+    <head>
+      <meta charset="utf-8" />
+        
+      <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1, maximum-scale=1"
+      />
+      <title>从零开发一个完全自主可控并且不接入第三方接口的AI助教 |  Yan Yonghao的博客</title>
+  <meta name="generator" content="hexo-theme-ayer">
+      
+      <link rel="shortcut icon" href="/images/favicon.ico" />
+       
+<link rel="stylesheet" href="/dist/main.css">
+
+      
+<link rel="stylesheet" href="/css/fonts/remixicon.css">
+
+      
+<link rel="stylesheet" href="/css/custom.css">
+ 
+      <script src="https://cdn.staticfile.org/pace/1.2.4/pace.min.js"></script>
+       
+ 
+
+      <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/@sweetalert2/theme-bulma@5.0.1/bulma.min.css"
+      />
+      <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.0.19/dist/sweetalert2.min.js"></script>
+
+      <!-- mermaid -->
+      
+      <style>
+        .swal2-styled.swal2-confirm {
+          font-size: 1.6rem;
+        }
+      </style>
+    </head>
+  </html>
+</html>
+
+
+<body>
+  <div id="app">
+    
+      
+    <main class="content on">
+      <section class="outer">
+  <article
+  id="post-ai-teaching-assistant"
+  class="article article-type-post"
+  itemscope
+  itemprop="blogPost"
+  data-scroll-reveal
+>
+  <div class="article-inner">
+    
+    <header class="article-header">
+       
+<h1 class="article-title sea-center" style="border-left:0" itemprop="name">
+  从零开发一个完全自主可控并且不接入第三方接口的AI助教
+</h1>
+ 
+
+      
+    </header>
+     
+    <div class="article-meta">
+      <a href="/2024/09/15/ai-teaching-assistant/" class="article-date">
+  <time datetime="2024-09-15T11:09:57.000Z" itemprop="datePublished">2024-09-15</time>
+</a>   
+<div class="word_count">
+    <span class="post-time">
+        <span class="post-meta-item-icon">
+            <i class="ri-quill-pen-line"></i>
+            <span class="post-meta-item-text"> 字数统计:</span>
+            <span class="post-count">4.1k</span>
+        </span>
+    </span>
+
+    <span class="post-time">
+        &nbsp; | &nbsp;
+        <span class="post-meta-item-icon">
+            <i class="ri-book-open-line"></i>
+            <span class="post-meta-item-text"> 阅读时长≈</span>
+            <span class="post-count">18 分钟</span>
+        </span>
+    </span>
+</div>
+ 
+    </div>
+      
+    <div class="tocbot"></div>
+
+
+
+
+  
+    <div class="article-entry" itemprop="articleBody">
+       
+  <p>从零开发一个全本地化AI助教经历(兴致勃勃-&gt;破防崩溃-&gt;完成上线)</p>
+<span id="more"></span>
+
+<h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h4><p>因为AI的兴起，公司也准备开发AI相关产品，由本人承担，牢骚就不发了。</p>
+<h4 id="技术栈的确定"><a href="#技术栈的确定" class="headerlink" title="技术栈的确定"></a>技术栈的确定</h4><p>技术栈并不能一开始就确定好，因为AI相关的技术当前是不成熟的，而且相关文档非常少，需要足够稳定和灵活的架构，只能一边摸索一边确定确定技术栈，在此给出本人使用的技术栈：</p>
+<ol>
+<li>架构<br> 一个微调过自我认知的AI模型、嵌入(向量化)模型、Flask、LangChain、SpringBoot、搜索引擎(bing和百度)、Elasticsearch</li>
+<li>AI模型微调部署相关框架<br> Xtuner、LMDeploy、LLaMA-Factory、vllm</li>
+<li>关键技术<br> sse、websocket、RAG</li>
+<li>关键硬件<br> A40、RTX4090、RTX3090</li>
+</ol>
+<h4 id="失败的经历"><a href="#失败的经历" class="headerlink" title="失败的经历"></a>失败的经历</h4><ol>
+<li><p>失败的模型微调、量化、部署</p>
+<p> 起初因为商汤的书生浦语系列(InternLM2-20&#x2F;7B-Chat)支持128k的超长上下文，同时因领导要128K的超长上下文，遂使用配套的Xtuner进行微调，LMDeploy进行部署，去年这个时候Open AI才刚把GPT带火，本人也是这个时候开始使用Xtuner，但是强如Chat GPT那个时候都没有128k上下文，难度可想而知，遇到的坑爹问题如下(很让人崩溃)：</p>
+<ul>
+<li><p>因为微调框架过新，很多相关的参数在GitHub上的文档都不全，而且版本更新非常快，然后参数的使用方式就变了，很多时候只能提issue问问题，经常得等到第二天才能得到答复，这还算好的，至少有人答复，这一点需要给书生浦语的小伙伴点赞，但是本人仍然被工期压得喘不过气(此处破防)。</p>
+</li>
+<li><p>因为InternLM2-20B-Chat规模稍大，在量化时24G的4090根本不够用，需要吃更多的显存，但是近来显卡一直是稀缺资源，因此蹲了好久才蹲到一块A40(40G)。</p>
+</li>
+<li><p>外网访问问题，通常这种报错都是xxxTime out：因为公司买的服务器连不了外网，导致NTLK的缓存在部署时下载不下来，给我急的团团转，在书生浦语的群里问，也少有人解惑，最后群里有一个外国人加了我，给了我两个方法：第一个，一直尝试下载，直到下载下来，第二个，将在书生浦语的服务器微调时下载下来的该缓存拷贝到自己的服务器上。本人经过一番折腾，采用了第二个方法(此处继续破防)。</p>
+</li>
+<li><p>只有使用LMDeploy部署微调后的模型才支持128k，但在并发时会容易出现微调失效的情况，因此建议放弃Xtuner和LMDeploy，改用LLaMA-Factory和vllm(此处最终心态崩溃)。</p>
+</li>
+</ul>
+</li>
+<li><p>嵌入模型过小</p>
+<p> 文本向量化的嵌入模型，前期使用的嵌入模型对向量的匹配非常不准确，后来发现如果文本向量化后的维数过少会导致查询的文本向量与库里的文本向量匹配不准确，特别是短文本与长文本的匹配，在此推荐bge-large-zh这个模型(1024维)，在查询时使用余弦相似度算法进行匹配。</p>
+</li>
+<li><p>向量存储库使用的是内存</p>
+<p> 文本向量的存储库最初用的是Chroma，是的，与Chrome就差一个字母，因为LangChain集成了该库，而且该库的英文文档也容易看懂，但是到后期就发现一个问题，该存储库是将所有文本向量加载到内存运行的，那以后随着文本多起来服务器内存可经不起这么耗，最后经过一番资料查找，将其更换为了Elasticsearch，注意，至少需要8.x以上的版本，本人用的是8.10.3。</p>
+</li>
+</ol>
+<h4 id="项目的核心逻辑"><a href="#项目的核心逻辑" class="headerlink" title="项目的核心逻辑"></a>项目的核心逻辑</h4><ol>
+<li><p>使得项目易用，看起来不是个人工智障<br> AI助教流程图如下：</p>
+ <img src="/../images/ai-teaching-assistant/question-flow.png" width=80% />
+
+<p> 普通问答和文件搜索增强流程图如下：</p>
+ <img src="/../images/ai-teaching-assistant/question-flow2.png" width=80% />
+
+<p> 注意：</p>
+<ul>
+<li>如果用户的问题是文档总结类的，在上传文件时间就要将总结后的文本提前生成存储在Elasticsearch中</li>
+</ul>
+</li>
+<li><p>可以接入各种项目，对应的web技术支持需要够通用，并且便于维护</p>
+<ul>
+<li>微信小程序不支持sse</li>
+<li>方便文本的向量化</li>
+<li>不推荐全部环节都用LangChain，首先该库一直在更新，不同小版本差别都巨大，其次不好debug，再者对开源模型支持不好，不易集成流式接口，因此，十分不易维护</li>
+<li>模型的调用是解藕的，可以在必要的时候接入一个十分强力的模型</li>
+</ul>
+<p> 由于几乎所有应用程序都支持websocket，本人经过摸索采用了如下对接方式的架构，应该是全网首例：<br> 使用SpringBoot的websocket对接Flask的sse流式接口，Flask的sse流式接口对接模型(vllm)的流式接口。<br> Flask的核心代码：<br> <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">class RobotService:</span><br><span class="line"></span><br><span class="line">    def my_robot_request(self, req_body):</span><br><span class="line">        if not req_body:</span><br><span class="line">            req_body = &#123;</span><br><span class="line">                # &#x27;model&#x27;: &#x27;gpt-3.5-turbo&#x27;,</span><br><span class="line">                &#x27;model&#x27;: &#x27;internlm2-chat-20b&#x27;,</span><br><span class="line">                &#x27;messages&#x27;: [&#123;</span><br><span class="line">                    &quot;role&quot;: &quot;user&quot;,</span><br><span class="line">                    &quot;content&quot;: &quot;周润发出演了哪些电影，请依次列出&quot;</span><br><span class="line">                &#125;],</span><br><span class="line">                &#x27;temperature&#x27;: 0.95,</span><br><span class="line">                &#x27;stream&#x27;: &quot;true&quot;</span><br><span class="line">            &#125;</span><br><span class="line">        req_headers = &#123;</span><br><span class="line">            &#x27;Content-Type&#x27;: &#x27;application/json&#x27;,</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        chat_res = requests.post(&#x27;http://127.0.0.1:6006/v1/chat/completions&#x27;,</span><br><span class="line">                                  json=req_body, headers=req_headers, stream=True)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">        return chat_res</span><br></pre></td></tr></table></figure><br> <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line">@rag_chat_demo.route(&#x27;/v1/chat/completions&#x27;, methods=[&#x27;POST&#x27;])</span><br><span class="line">def chat_completions():</span><br><span class="line"></span><br><span class="line">    req_body = request.get_json()</span><br><span class="line">    # 是否开启搜索引擎</span><br><span class="line">    # search_flag 0或没有 关闭(默认) 1 开启</span><br><span class="line">    # search_type 0 bing(默认) 1 baidu</span><br><span class="line">    search_flag = req_body.get(&quot;search_flag&quot;)</span><br><span class="line">    search_type = req_body.get(&quot;search_type&quot;)</span><br><span class="line">    count = req_body.get(&quot;count&quot;)</span><br><span class="line">    if search_flag == 1:</span><br><span class="line">        search_engine = SearchEngineService(BING_SEARCH_URL, BING_SUBSCRIPTION_KEY, search_type)</span><br><span class="line">        messages = req_body[&quot;messages&quot;]</span><br><span class="line">        question = messages[-1][&quot;content&quot;]</span><br><span class="line">        # 先进行问候语向量匹配  greeting_match_flag</span><br><span class="line">        greeting_match_flag = match_greeting_instruction(question)</span><br><span class="line">        if not greeting_match_flag:</span><br><span class="line">            joined_res_str = &quot;&quot;</span><br><span class="line">            if search_type == 0:</span><br><span class="line">                search_results = search_engine.bing_search(question, count if count and count &gt; 0 else default_count)</span><br><span class="line">                joined_res_str = search_engine.handle_search_results(search_results)</span><br><span class="line">            elif search_type == 1:</span><br><span class="line">                search_results = search_engine.baidu_search(question, count if count and count &gt; 0 else default_count)</span><br><span class="line">                joined_res_str = search_engine.handle_search_results(search_results)</span><br><span class="line"></span><br><span class="line">            demo_search_engine_prompt = Prompt.demo_search_engine_prompt</span><br><span class="line">            actual_demo_search_engine_prompt = demo_search_engine_prompt.replace(&quot;$$context$$&quot;, joined_res_str)</span><br><span class="line">            actual_demo_search_engine_prompt = actual_demo_search_engine_prompt.replace(&quot;$$question$$&quot;, question)</span><br><span class="line">            req_body[&quot;messages&quot;][-1][&quot;content&quot;] = actual_demo_search_engine_prompt</span><br><span class="line"></span><br><span class="line">    if search_flag != None:</span><br><span class="line">        removed_search_flag = req_body.pop(&#x27;search_flag&#x27;)</span><br><span class="line">    if search_type != None:</span><br><span class="line">        removed_search_type = req_body.pop(&#x27;search_type&#x27;)</span><br><span class="line">    if count != None:</span><br><span class="line">        removed_count = req_body.pop(&#x27;count&#x27;)</span><br><span class="line">    print(&quot;问题请求体：&quot; + str(req_body))</span><br><span class="line">    chat_res = robot_service.my_robot_request(req_body)</span><br><span class="line">    def generate():</span><br><span class="line">        for trunk in chat_res:</span><br><span class="line">            text = trunk.decode(&#x27;utf-8&#x27;)</span><br><span class="line">            # print(&quot;=====&gt;流:&quot;, text)</span><br><span class="line">            yield text</span><br><span class="line"></span><br><span class="line">    headers = &#123;</span><br><span class="line">        &#x27;Content-Type&#x27;: &#x27;text/event-stream&#x27;,</span><br><span class="line">        &#x27;Cache-Control&#x27;: &#x27;no-cache&#x27;,</span><br><span class="line">        &#x27;X-Accel-Buffering&#x27;: &#x27;no&#x27;,</span><br><span class="line">    &#125;</span><br><span class="line">    return Response(generate(), mimetype=&quot;text/event-stream&quot;, headers=headers)</span><br></pre></td></tr></table></figure><br> SpringBoot的核心代码：<br> <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br></pre></td><td class="code"><pre><span class="line">package com.zh.chatgpt.assistant.websocket;</span><br><span class="line"></span><br><span class="line">import cn.hutool.core.util.StrUtil;</span><br><span class="line">import cn.hutool.json.JSONUtil;</span><br><span class="line">import com.zh.chatgpt.assistant.aiteachingassistantclient.AITeachingAssistantMessage;</span><br><span class="line">import com.zh.chatgpt.assistant.aiteachingassistantclient.AITeachingAssistantStreamClient;</span><br><span class="line">import com.zh.chatgpt.common.config.AITeachingAssistantLocalCache;</span><br><span class="line">import com.zh.chatgpt.common.enums.GptRoleEnum;</span><br><span class="line">import com.zh.chatgpt.common.listener.AITeachingAssistantWebSocketEventSourceListener;</span><br><span class="line">import lombok.extern.slf4j.Slf4j;</span><br><span class="line">import org.springframework.stereotype.Component;</span><br><span class="line"></span><br><span class="line">import javax.annotation.PostConstruct;</span><br><span class="line">import javax.annotation.Resource;</span><br><span class="line">import javax.websocket.*;</span><br><span class="line">import javax.websocket.server.PathParam;</span><br><span class="line">import javax.websocket.server.ServerEndpoint;</span><br><span class="line">import java.util.ArrayList;</span><br><span class="line">import java.util.Collections;</span><br><span class="line">import java.util.List;</span><br><span class="line">import java.util.concurrent.ConcurrentHashMap;</span><br><span class="line">import java.util.concurrent.CopyOnWriteArraySet;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">/**</span><br><span class="line">* @author yyh</span><br><span class="line">*/</span><br><span class="line">@Slf4j</span><br><span class="line">@Component</span><br><span class="line">@ServerEndpoint(&quot;/websocket/ai-teaching-assistant/&#123;uid&#125;/&#123;question-type&#125;/&#123;function-flag&#125;/&#123;fk_assistant_id&#125;&quot;)</span><br><span class="line">public class AITeachingAssistantWebSocketServer &#123;</span><br><span class="line"></span><br><span class="line">    @Resource</span><br><span class="line">    private AITeachingAssistantStreamClient primeAITeachingAssistantStreamClient;</span><br><span class="line"></span><br><span class="line">    private static AITeachingAssistantStreamClient aiTeachingAssistantStreamClient;</span><br><span class="line"></span><br><span class="line">    @PostConstruct</span><br><span class="line">    public void init() &#123;</span><br><span class="line">        aiTeachingAssistantStreamClient = this.primeAITeachingAssistantStreamClient;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    //在线总数</span><br><span class="line">    private static int onlineCount;</span><br><span class="line">    //当前会话</span><br><span class="line">    private Session session;</span><br><span class="line">    //用户id -先按浏览器随机生成</span><br><span class="line">    private String uid;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">    * 问题类型：2聊天,3搜索增强</span><br><span class="line">    */</span><br><span class="line">    private Integer questionType;</span><br><span class="line"></span><br><span class="line">    private Integer functionFlag;</span><br><span class="line"></span><br><span class="line">    private String fkAssistantId;</span><br><span class="line"></span><br><span class="line">    private static CopyOnWriteArraySet&lt;AITeachingAssistantWebSocketServer&gt; webSocketSet = new CopyOnWriteArraySet&lt;&gt;();</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">    * 用来存放每个客户端对应的WebSocketServer对象</span><br><span class="line">    */</span><br><span class="line">    private static ConcurrentHashMap&lt;String, AITeachingAssistantWebSocketServer&gt; webSocketMap = new ConcurrentHashMap();</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">    * 为了保存在线用户信息，在方法中新建一个list存储一下【实际项目依据复杂度，可以存储到数据库或者缓存】</span><br><span class="line">    */</span><br><span class="line">    private final static List&lt;Session&gt; SESSIONS = Collections.synchronizedList(new ArrayList&lt;&gt;());</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">    * 建立连接</span><br><span class="line">    *</span><br><span class="line">    * @param session</span><br><span class="line">    * @param uid</span><br><span class="line">    */</span><br><span class="line">    @OnOpen</span><br><span class="line">    public void onOpen(Session session, @PathParam(&quot;uid&quot;) String uid, @PathParam(&quot;question-type&quot;) Integer questionType,</span><br><span class="line">                    @PathParam(&quot;function-flag&quot;) Integer functionFlag, @PathParam(&quot;fk_assistant_id&quot;) String fkAssistantId) &#123;</span><br><span class="line">        this.session = session;</span><br><span class="line">        this.uid = uid;</span><br><span class="line">        this.questionType = questionType;</span><br><span class="line">        this.functionFlag = functionFlag;</span><br><span class="line">        this.fkAssistantId = fkAssistantId;</span><br><span class="line">        webSocketSet.add(this);</span><br><span class="line">        SESSIONS.add(session);</span><br><span class="line">        if (webSocketMap.containsKey(uid)) &#123;</span><br><span class="line">            webSocketMap.remove(uid);</span><br><span class="line">            webSocketMap.put(uid, this);</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            webSocketMap.put(uid, this);</span><br><span class="line">            addOnlineCount();</span><br><span class="line">        &#125;</span><br><span class="line">        log.info(&quot;[连接ID:&#123;&#125;] 建立连接, 当前连接数:&#123;&#125;&quot;, this.uid, getOnlineCount());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">    * 断开连接</span><br><span class="line">    */</span><br><span class="line">    @OnClose</span><br><span class="line">    public void onClose() &#123;</span><br><span class="line">        webSocketSet.remove(this);</span><br><span class="line">        if (webSocketMap.containsKey(uid)) &#123;</span><br><span class="line">            webSocketMap.remove(uid);</span><br><span class="line">            subOnlineCount();</span><br><span class="line">        &#125;</span><br><span class="line">        log.info(&quot;[连接ID:&#123;&#125;] 断开连接, 当前连接数:&#123;&#125;&quot;, uid, getOnlineCount());</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">    * 发送错误</span><br><span class="line">    *</span><br><span class="line">    * @param session</span><br><span class="line">    * @param error</span><br><span class="line">    */</span><br><span class="line">    @OnError</span><br><span class="line">    public void onError(Session session, Throwable error) &#123;</span><br><span class="line">        log.info(&quot;[连接ID:&#123;&#125;] 错误原因:&#123;&#125;&quot;, this.uid, error.getMessage());</span><br><span class="line">        error.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">    * 接收到客户端消息</span><br><span class="line">    *</span><br><span class="line">    * @param msg</span><br><span class="line">    */</span><br><span class="line">    @OnMessage</span><br><span class="line">    public void onMessage(String msg) &#123;</span><br><span class="line">        log.info(&quot;[连接ID:&#123;&#125;] 收到消息:&#123;&#125;&quot;, this.uid, msg);</span><br><span class="line">        // 0 否，1 是</span><br><span class="line">        Integer summarizeFlag = 0;</span><br><span class="line">        Integer regenerateFlag = 0;</span><br><span class="line">        if (&quot;#9527#&quot;.equals(msg))&#123;</span><br><span class="line">            summarizeFlag = 1;</span><br><span class="line">        &#125;</span><br><span class="line">        if (&quot;*9527*&quot;.equals(msg))&#123;</span><br><span class="line">            regenerateFlag = 1;</span><br><span class="line">        &#125;</span><br><span class="line">        log.info(&quot;=====&gt;summarizeFlag:&#123;&#125;,regenerateFlag:&#123;&#125;&quot;, summarizeFlag, regenerateFlag);</span><br><span class="line">        //接受参数</span><br><span class="line">        AITeachingAssistantWebSocketEventSourceListener eventSourceListener =</span><br><span class="line">                new AITeachingAssistantWebSocketEventSourceListener(this.session, this.uid, msg, this.questionType,</span><br><span class="line">                        this.functionFlag, this.fkAssistantId);</span><br><span class="line">        String messageContext = (String) AITeachingAssistantLocalCache.CACHE.get(uid);</span><br><span class="line">        log.info(&quot;刚从缓存中获取的messages的内容：&#123;&#125;&quot;, messageContext);</span><br><span class="line">        List&lt;AITeachingAssistantMessage&gt; messages = new ArrayList&lt;&gt;();</span><br><span class="line">        if (StrUtil.isNotBlank(messageContext)) &#123;</span><br><span class="line">            messages = JSONUtil.toList(messageContext, AITeachingAssistantMessage.class);</span><br><span class="line">            AITeachingAssistantMessage firstMsg = messages.get(0);</span><br><span class="line">            if (GptRoleEnum.SYSTEM.getValue().equals(firstMsg.getRole()))&#123;</span><br><span class="line">                for (int i = 1; i &lt; messages.size(); i++) &#123;</span><br><span class="line">                    AITeachingAssistantMessage everyMsg = messages.get(i);</span><br><span class="line">                    String everyRoleStr = everyMsg.getRole();</span><br><span class="line">                    //可以根据奇数偶数来判断当前role是否删除；也可以记住上一个role，来判断当前role是否删除</span><br><span class="line">                    if (i % 2 == 0)&#123;</span><br><span class="line">                        if (!GptRoleEnum.ASSISTANT.getValue().equals(everyRoleStr))&#123;</span><br><span class="line">                            messages.remove(i);</span><br><span class="line">                            i--;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;else &#123;</span><br><span class="line">                        if (!GptRoleEnum.USER.getValue().equals(everyRoleStr))&#123;</span><br><span class="line">                            messages.remove(i);</span><br><span class="line">                            i--;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;else &#123;</span><br><span class="line">                for (int i = 0; i &lt; messages.size(); i++) &#123;</span><br><span class="line">                    AITeachingAssistantMessage everyMsg = messages.get(i);</span><br><span class="line">                    String everyRoleStr = everyMsg.getRole();</span><br><span class="line">                    //可以根据奇数偶数来判断当前role是否删除；也可以记住上一个role，来判断当前role是否删除</span><br><span class="line">                    if (i % 2 == 0)&#123;</span><br><span class="line">                        if (!GptRoleEnum.USER.getValue().equals(everyRoleStr))&#123;</span><br><span class="line">                            messages.remove(i);</span><br><span class="line">                            i--;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;else &#123;</span><br><span class="line">                        if (!GptRoleEnum.ASSISTANT.getValue().equals(everyRoleStr))&#123;</span><br><span class="line">                            messages.remove(i);</span><br><span class="line">                            i--;</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">            if (messages.size() &gt;= 10) &#123;</span><br><span class="line">                if (GptRoleEnum.SYSTEM.getValue().equals(firstMsg.getRole()))&#123;</span><br><span class="line">                    messages.remove(1);</span><br><span class="line">                    messages.remove(1);</span><br><span class="line">                &#125;else &#123;</span><br><span class="line">                    //从2开始，保证第一个的role是user</span><br><span class="line">                    messages = messages.subList(2, 10);</span><br><span class="line">                &#125;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            if (regenerateFlag.equals(1))&#123;</span><br><span class="line">                messages.remove(messages.size() - 1);</span><br><span class="line">            &#125;else if (regenerateFlag.equals(0))&#123;</span><br><span class="line">                AITeachingAssistantMessage currentMessage = AITeachingAssistantMessage.builder().content(msg).role(GptRoleEnum.USER.getValue()).build();</span><br><span class="line">                messages.add(currentMessage);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            AITeachingAssistantMessage currentMessage = AITeachingAssistantMessage.builder().content(msg).role(GptRoleEnum.USER.getValue()).build();</span><br><span class="line">            messages.add(currentMessage);</span><br><span class="line">        &#125;</span><br><span class="line">        log.info(&quot;messages的内容：&#123;&#125;&quot;, messages);</span><br><span class="line">        aiTeachingAssistantStreamClient.streamChatCompletion(messages, eventSourceListener, questionType,</span><br><span class="line">                functionFlag, fkAssistantId, summarizeFlag);</span><br><span class="line">        //问完话之后是需要缓存assistant内容，以记得上下文，这部分在Listener中</span><br><span class="line">        if (summarizeFlag == 0)&#123;</span><br><span class="line">            AITeachingAssistantLocalCache.CACHE.put(uid, JSONUtil.toJsonStr(messages), AITeachingAssistantLocalCache.TIMEOUT);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">    * 获取当前连接数</span><br><span class="line">    *</span><br><span class="line">    * @return</span><br><span class="line">    */</span><br><span class="line">    public static synchronized int getOnlineCount() &#123;</span><br><span class="line">        return onlineCount;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">    * 当前连接数加一</span><br><span class="line">    */</span><br><span class="line">    public static synchronized void addOnlineCount() &#123;</span><br><span class="line">        AITeachingAssistantWebSocketServer.onlineCount++;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">    * 当前连接数减一</span><br><span class="line">    */</span><br><span class="line">    public static synchronized void subOnlineCount() &#123;</span><br><span class="line">        AITeachingAssistantWebSocketServer.onlineCount--;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><br> <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br></pre></td><td class="code"><pre><span class="line">package com.zh.chatgpt.common.listener;</span><br><span class="line"></span><br><span class="line">import cn.hutool.core.util.StrUtil;</span><br><span class="line">import cn.hutool.json.JSONUtil;</span><br><span class="line">import com.alibaba.fastjson.JSON;</span><br><span class="line">import com.alibaba.fastjson.JSONObject;</span><br><span class="line">import com.fasterxml.jackson.databind.ObjectMapper;</span><br><span class="line">import com.zh.chatgpt.assistant.aiteachingassistantclient.AITeachingAssistantChatCompletionResponse;</span><br><span class="line">import com.zh.chatgpt.assistant.entity.Chat;</span><br><span class="line">import com.zh.chatgpt.assistant.myrobotclient.MyRobotMessage;</span><br><span class="line">import com.zh.chatgpt.assistant.service.IChatService;</span><br><span class="line">import com.zh.chatgpt.assistant.service.impl.ChatService;</span><br><span class="line">import com.zh.chatgpt.common.config.AITeachingAssistantLocalCache;</span><br><span class="line">import com.zh.chatgpt.common.enums.GptRoleEnum;</span><br><span class="line">import com.zh.chatgpt.common.utils.SpringContextUtil;</span><br><span class="line">import lombok.SneakyThrows;</span><br><span class="line">import lombok.extern.slf4j.Slf4j;</span><br><span class="line">import okhttp3.Response;</span><br><span class="line">import okhttp3.ResponseBody;</span><br><span class="line">import okhttp3.sse.EventSource;</span><br><span class="line">import okhttp3.sse.EventSourceListener;</span><br><span class="line">import org.apache.commons.lang3.StringUtils;</span><br><span class="line"></span><br><span class="line">import javax.websocket.Session;</span><br><span class="line">import java.util.ArrayList;</span><br><span class="line">import java.util.List;</span><br><span class="line">import java.util.Objects;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">/**</span><br><span class="line">* @author yyh</span><br><span class="line">*/</span><br><span class="line">@Slf4j</span><br><span class="line">public class AITeachingAssistantWebSocketEventSourceListener extends EventSourceListener &#123;</span><br><span class="line"></span><br><span class="line">    private Session session;</span><br><span class="line"></span><br><span class="line">    private String uid;</span><br><span class="line"></span><br><span class="line">    private String question;</span><br><span class="line"></span><br><span class="line">    private Integer questionType;</span><br><span class="line">    private Integer functionFlag;</span><br><span class="line">    private String fkAssistantId;</span><br><span class="line"></span><br><span class="line">    //private Integer summarizeFlag;</span><br><span class="line"></span><br><span class="line">    public AITeachingAssistantWebSocketEventSourceListener(Session session, String uid, String question, Integer questionType,</span><br><span class="line">                                                        Integer functionFlag, String fkAssistantId) &#123;</span><br><span class="line">        this.session = session;</span><br><span class="line">        this.uid = uid;</span><br><span class="line">        this.question = question;</span><br><span class="line">        this.questionType = questionType;</span><br><span class="line">        this.functionFlag = functionFlag;</span><br><span class="line">        this.fkAssistantId = fkAssistantId;</span><br><span class="line">        //this.summarizeFlag = summarizeFlag;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    private String onceAnswer = &quot;&quot;;</span><br><span class="line"></span><br><span class="line">    private IChatService chatService = SpringContextUtil.getBean(ChatService.class);</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">    * &#123;@inheritDoc&#125;</span><br><span class="line">    */</span><br><span class="line">    @Override</span><br><span class="line">    public void onOpen(EventSource eventSource, Response response) &#123;</span><br><span class="line">        log.info(&quot;AITeachingAssistant建立sse连接...&quot;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">    * &#123;@inheritDoc&#125;</span><br><span class="line">    */</span><br><span class="line">    @SneakyThrows</span><br><span class="line">    @Override</span><br><span class="line">    public void onEvent(EventSource eventSource, String id, String type, String data) &#123;</span><br><span class="line">        log.info(&quot;AITeachingAssistant返回数据：&#123;&#125;&quot;, data);</span><br><span class="line">        if (data.equals(&quot;[DONE]&quot;)) &#123;</span><br><span class="line">            log.info(&quot;AITeachingAssistant返回数据结束了&quot;);</span><br><span class="line">            session.getBasicRemote().sendText(&quot;[DONE]&quot;);</span><br><span class="line">            return;</span><br><span class="line">        &#125;</span><br><span class="line">        ObjectMapper mapper = new ObjectMapper();</span><br><span class="line">        // 读取响应Json</span><br><span class="line">        AITeachingAssistantChatCompletionResponse completionResponse = mapper.readValue(data, AITeachingAssistantChatCompletionResponse.class);</span><br><span class="line">        String delta = mapper.writeValueAsString(completionResponse.getChoices().get(0).getDelta());</span><br><span class="line">        log.info(&quot;发送的数据：&#123;&#125;&quot;, delta);</span><br><span class="line">        JSONObject streamAnswerObj = JSON.parseObject(delta);</span><br><span class="line">        String content = streamAnswerObj.getString(&quot;content&quot;);</span><br><span class="line">        if (StringUtils.isNotBlank(content)) &#123;</span><br><span class="line">            onceAnswer += content;</span><br><span class="line">        &#125;</span><br><span class="line">        session.getBasicRemote().sendText(delta);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public void onClosed(EventSource eventSource) &#123;</span><br><span class="line">        log.info(&quot;AITeachingAssistant关闭sse连接...&quot;);</span><br><span class="line">        log.info(&quot;本次回答内容：&#123;&#125;&quot;, onceAnswer);</span><br><span class="line">        String messageContext = (String) AITeachingAssistantLocalCache.CACHE.get(uid);</span><br><span class="line">        List&lt;MyRobotMessage&gt; messages = new ArrayList&lt;&gt;();</span><br><span class="line">        if (StrUtil.isNotBlank(messageContext)) &#123;</span><br><span class="line">            messages = JSONUtil.toList(messageContext, MyRobotMessage.class);</span><br><span class="line">            MyRobotMessage assistantMessage = MyRobotMessage.builder().content(onceAnswer).role(GptRoleEnum.ASSISTANT.getValue()).build();</span><br><span class="line">            messages.add(assistantMessage);</span><br><span class="line">            AITeachingAssistantLocalCache.CACHE.put(uid, JSONUtil.toJsonStr(messages), AITeachingAssistantLocalCache.TIMEOUT);</span><br><span class="line">        &#125;</span><br><span class="line">        Chat questionChat = Chat.builder()</span><br><span class="line">                .uid(this.uid)</span><br><span class="line">                //user</span><br><span class="line">                .role(2)</span><br><span class="line">                .content(this.question)</span><br><span class="line">                .questionType(questionType)</span><br><span class="line">                .gptType(2)</span><br><span class="line">                .functionFlag(functionFlag)</span><br><span class="line">                .fkAssistantId(fkAssistantId)</span><br><span class="line">                .build();</span><br><span class="line">        chatService.save(questionChat);</span><br><span class="line">        Chat onceAnswerChat = Chat.builder()</span><br><span class="line">                .uid(this.uid)</span><br><span class="line">                //assistant</span><br><span class="line">                .role(1)</span><br><span class="line">                .content(this.onceAnswer)</span><br><span class="line">                .questionType(questionType)</span><br><span class="line">                .gptType(2)</span><br><span class="line">                .functionFlag(functionFlag)</span><br><span class="line">                .fkAssistantId(fkAssistantId)</span><br><span class="line">                .build();</span><br><span class="line">        chatService.save(onceAnswerChat);</span><br><span class="line"></span><br><span class="line">        onceAnswer = &quot;&quot;;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    @SneakyThrows</span><br><span class="line">    @Override</span><br><span class="line">    public void onFailure(EventSource eventSource, Throwable t, Response response) &#123;</span><br><span class="line">        if (Objects.isNull(response)) &#123;</span><br><span class="line">            return;</span><br><span class="line">        &#125;</span><br><span class="line">        ResponseBody body = response.body();</span><br><span class="line">        if (Objects.nonNull(body)) &#123;</span><br><span class="line">            log.error(&quot;AITeachingAssistant  sse连接异常data：&#123;&#125;，异常：&#123;&#125;&quot;, body.string(), t);</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            log.error(&quot;AITeachingAssistant  sse连接异常data：&#123;&#125;，异常：&#123;&#125;&quot;, response, t);</span><br><span class="line">        &#125;</span><br><span class="line">        eventSource.cancel();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+</li>
+<li><p>需要Flask的前端写一个演示页面，支持普通流式问答以及搜索引擎、上传文件的RAG流式问答</p>
+<ul>
+<li>文本向量化即Elasticsearch的使用放在Flask中</li>
+<li>Flask的前端用Bootstrap3.x + html + css + js实现</li>
+</ul>
+</li>
+</ol>
+<h4 id="开发过程中遇到的问题"><a href="#开发过程中遇到的问题" class="headerlink" title="开发过程中遇到的问题"></a>开发过程中遇到的问题</h4><ol>
+<li>微调框架每次版本更新都要重新安装依赖，动辄10个G左右，而阿里的镜像源白天经常只有几百k，非常的耗时。</li>
+<li>webserver中注入Bean时要注意，由于每次建立websocket连接时，都是new一个webserver类，因此在保存对话记录的时候，使用相关Bean时要使用ApplicationContextAware实现类获取Bean做保存操作。</li>
+<li>由于sse接口每次返回的是<code>data:</code> + json的数据，但是在Flask的前端页面中，使用js的原生fetch拉取sse流式接口时，可能会出现一次拉取一行<code>data:</code> + json的数据再加上这样的半行数据，一定要注意json的解析，之前在这里卡了好久(很让人崩溃)。</li>
+<li>百度搜索接口没有sdk，请使用<code>https://www.baidu.com/s?wd=your_search_word&amp;pn=pagen_num</code>封装，并且要去广告，bing可以去Azure申请接口，使用sdk来接入。</li>
+<li>Flask的相关组件注意使用防坑版本，不同版本很容易不兼容，比如定时器组件、Bootstrap组件。</li>
+<li>在接入其他项目时，比如，对作文批改结果(json数据)生成评语时，模型有时会将json字段回答出来，这就比较尴尬了，在多次调了prompt无果后，想到一个办法，那就将原json重新构造为一个中文json，这样就不会尴尬了。</li>
+<li>中途有尝试使用Elasticsearch的ik分词器来代替向量相似度匹配，存入时细分词，查询时粗分词，最后发现效果没有后者好，因此放弃ik分词器。</li>
+<li>LangChain只适合用来做分割文本操作，原因上方有提到过。</li>
+<li>使用过的模型有：Baichuan2-13&#x2F;7B-chat、Yi-34B-Chat、InternLM2-20&#x2F;7B-Chat、Qwen2-7B-Instruct，其中，超过13&#x2F;14B的模型在只有24G显存的情况下就需要量化部署了；InternLM2和Qwen2系列支持的上下文通过配置都可达128k，但是前者有并发问题，推荐后者；综合回答和吃显存的条件，Qwen2的效果相对较好。</li>
+</ol>
+<h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>本次摸索感触良多：</p>
+<ol>
+<li>一开始以为AI能解决很多问题，但实际实现下来，没有想象中的那么万能，比如想用AI来修复字幕文件中的错别字，发音标准的效果好一些，不标准的根本不行，更别提很多<code>嗯，啊啊啊啊，哦哦哦</code>这样的文本了。</li>
+<li>涉及python的新兴技术很不稳定，很多都是跟概率相关，十分耗费心神。</li>
+<li>python相关的包版本藏有很多大坑，很多时候都是版本不兼容导致。</li>
+<li>确定一个项目的架构需要考虑的问题比较多。</li>
+<li>原生的html + css + js实现功能的话，什么组件都要自己写，Bootstrap3.x版本过低了，是为了匹配Flask的版本不出bug。</li>
+<li>针对垂直领域的微调一直没有做好，因为公司没人懂大模型的数据构造、数据标注方法，也没有比较好的相关资料。</li>
+</ol>
+ 
+      <!-- reward -->
+      
+    </div>
+    
+
+    <!-- copyright -->
+    
+    <div class="declare">
+      <ul class="post-copyright">
+        <li>
+          <i class="ri-copyright-line"></i>
+          <strong>版权声明： </strong>
+          
+          本博客所有文章除特别声明外，著作权归作者所有。转载请注明出处！
+          
+        </li>
+      </ul>
+    </div>
+    
+    <footer class="article-footer">
+       
+<div class="share-btn">
+      <span class="share-sns share-outer">
+        <i class="ri-share-forward-line"></i>
+        分享
+      </span>
+      <div class="share-wrap">
+        <i class="arrow"></i>
+        <div class="share-icons">
+          
+          <a class="weibo share-sns" href="javascript:;" data-type="weibo">
+            <i class="ri-weibo-fill"></i>
+          </a>
+          <a class="weixin share-sns wxFab" href="javascript:;" data-type="weixin">
+            <i class="ri-wechat-fill"></i>
+          </a>
+          <a class="qq share-sns" href="javascript:;" data-type="qq">
+            <i class="ri-qq-fill"></i>
+          </a>
+          <a class="douban share-sns" href="javascript:;" data-type="douban">
+            <i class="ri-douban-line"></i>
+          </a>
+          <!-- <a class="qzone share-sns" href="javascript:;" data-type="qzone">
+            <i class="icon icon-qzone"></i>
+          </a> -->
+          
+          <a class="facebook share-sns" href="javascript:;" data-type="facebook">
+            <i class="ri-facebook-circle-fill"></i>
+          </a>
+          <a class="twitter share-sns" href="javascript:;" data-type="twitter">
+            <i class="ri-twitter-fill"></i>
+          </a>
+          <a class="google share-sns" href="javascript:;" data-type="google">
+            <i class="ri-google-fill"></i>
+          </a>
+        </div>
+      </div>
+</div>
+
+<div class="wx-share-modal">
+    <a class="modal-close" href="javascript:;"><i class="ri-close-circle-line"></i></a>
+    <p>扫一扫，分享到微信</p>
+    <div class="wx-qrcode">
+      <img src="//api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://xxg98.github.io/2024/09/15/ai-teaching-assistant/" alt="微信分享二维码">
+    </div>
+</div>
+
+<div id="share-mask"></div>  
+    </footer>
+  </div>
+
+   
+  <nav class="article-nav">
+    
+    
+      <a href="/2024/09/08/springcloud2springboot/" class="article-nav-link">
+        <strong class="article-nav-caption">下一篇</strong>
+        <div class="article-nav-title">Spring Cloud项目改为SpringBoot</div>
+      </a>
+    
+  </nav>
+
+  
+   
+  
+   
+    <script src="https://cdn.staticfile.org/twikoo/1.4.18/twikoo.all.min.js"></script>
+    <div id="twikoo" class="twikoo"></div>
+    <script>
+        twikoo.init({
+            envId: ""
+        })
+    </script>
+ 
+</article>
+
+</section>
+      <footer class="footer">
+  <div class="outer">
+    <ul>
+      <li>
+        Copyrights &copy;
+        2015-2024
+        <i class="ri-heart-fill heart_icon"></i> Yan Yonghao
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+      </li>
+    </ul>
+    <ul>
+      <li>
+        
+        
+        <span>
+  <span><i class="ri-user-3-fill"></i>访问人数:<span id="busuanzi_value_site_uv"></span></span>
+  <span class="division">|</span>
+  <span><i class="ri-eye-fill"></i>浏览次数:<span id="busuanzi_value_page_pv"></span></span>
+</span>
+        
+      </li>
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      
+    </ul>
+    <ul>
+      <li>
+        <!-- cnzz统计 -->
+        
+        <script type="text/javascript" src='https://s9.cnzz.com/z_stat.php?id=1278069914&amp;web_id=1278069914'></script>
+        
+      </li>
+    </ul>
+  </div>
+</footer>    
+    </main>
+    <div class="float_btns">
+      <div class="totop" id="totop">
+  <i class="ri-arrow-up-line"></i>
+</div>
+
+<div class="todark" id="todark">
+  <i class="ri-moon-line"></i>
+</div>
+
+    </div>
+    <aside class="sidebar on">
+      <button class="navbar-toggle"></button>
+<nav class="navbar">
+  
+  <div class="logo">
+    <a href="/"><img src="/images/ayer-side.svg" alt="Yan Yonghao的博客"></a>
+  </div>
+  
+  <ul class="nav nav-main">
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/">主页</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/archives">归档</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/categories">分类</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags">标签</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/tags/%E6%97%85%E8%A1%8C/">旅行</a>
+    </li>
+    
+    <li class="nav-item">
+      <a class="nav-item-link" href="/2019/about">关于我</a>
+    </li>
+    
+  </ul>
+</nav>
+<nav class="navbar navbar-bottom">
+  <ul class="nav">
+    <li class="nav-item">
+      
+      
+    </li>
+  </ul>
+</nav>
+<div class="search-form-wrap">
+  <div class="local-search local-search-plugin">
+  <input type="search" id="local-search-input" class="local-search-input" placeholder="Search...">
+  <div id="local-search-result" class="local-search-result"></div>
+</div>
+</div>
+    </aside>
+    <div id="mask"></div>
+
+<!-- #reward -->
+<div id="reward">
+  <span class="close"><i class="ri-close-line"></i></span>
+  <p class="reward-p"><i class="ri-cup-line"></i>请我喝杯咖啡吧~</p>
+  <div class="reward-box">
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/alipay.jpg">
+      <span class="reward-type">支付宝</span>
+    </div>
+    
+    
+    <div class="reward-item">
+      <img class="reward-img" src="/images/wechat.jpg">
+      <span class="reward-type">微信</span>
+    </div>
+    
+  </div>
+</div>
+    
+<script src="/js/jquery-3.6.0.min.js"></script>
+ 
+<script src="/js/lazyload.min.js"></script>
+
+<!-- Tocbot -->
+ 
+<script src="/js/tocbot.min.js"></script>
+
+<script>
+  tocbot.init({
+    tocSelector: ".tocbot",
+    contentSelector: ".article-entry",
+    headingSelector: "h1, h2, h3, h4, h5, h6",
+    hasInnerContainers: true,
+    scrollSmooth: true,
+    scrollContainer: "main",
+    positionFixedSelector: ".tocbot",
+    positionFixedClass: "is-position-fixed",
+    fixedSidebarOffset: "auto",
+  });
+</script>
+
+<script src="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.js"></script>
+<link
+  rel="stylesheet"
+  href="https://cdn.staticfile.org/jquery-modal/0.9.2/jquery.modal.min.css"
+/>
+<script src="https://cdn.staticfile.org/justifiedGallery/3.8.1/js/jquery.justifiedGallery.min.js"></script>
+
+<script src="/dist/main.js"></script>
+
+<!-- ImageViewer -->
+ <!-- Root element of PhotoSwipe. Must have class pswp. -->
+<div class="pswp" tabindex="-1" role="dialog" aria-hidden="true">
+
+    <!-- Background of PhotoSwipe. 
+         It's a separate element as animating opacity is faster than rgba(). -->
+    <div class="pswp__bg"></div>
+
+    <!-- Slides wrapper with overflow:hidden. -->
+    <div class="pswp__scroll-wrap">
+
+        <!-- Container that holds slides. 
+            PhotoSwipe keeps only 3 of them in the DOM to save memory.
+            Don't modify these 3 pswp__item elements, data is added later on. -->
+        <div class="pswp__container">
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+            <div class="pswp__item"></div>
+        </div>
+
+        <!-- Default (PhotoSwipeUI_Default) interface on top of sliding area. Can be changed. -->
+        <div class="pswp__ui pswp__ui--hidden">
+
+            <div class="pswp__top-bar">
+
+                <!--  Controls are self-explanatory. Order can be changed. -->
+
+                <div class="pswp__counter"></div>
+
+                <button class="pswp__button pswp__button--close" title="Close (Esc)"></button>
+
+                <button class="pswp__button pswp__button--share" style="display:none" title="Share"></button>
+
+                <button class="pswp__button pswp__button--fs" title="Toggle fullscreen"></button>
+
+                <button class="pswp__button pswp__button--zoom" title="Zoom in/out"></button>
+
+                <!-- Preloader demo http://codepen.io/dimsemenov/pen/yyBWoR -->
+                <!-- element will get class pswp__preloader--active when preloader is running -->
+                <div class="pswp__preloader">
+                    <div class="pswp__preloader__icn">
+                        <div class="pswp__preloader__cut">
+                            <div class="pswp__preloader__donut"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pswp__share-modal pswp__share-modal--hidden pswp__single-tap">
+                <div class="pswp__share-tooltip"></div>
+            </div>
+
+            <button class="pswp__button pswp__button--arrow--left" title="Previous (arrow left)">
+            </button>
+
+            <button class="pswp__button pswp__button--arrow--right" title="Next (arrow right)">
+            </button>
+
+            <div class="pswp__caption">
+                <div class="pswp__caption__center"></div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.css">
+<link rel="stylesheet" href="https://cdn.staticfile.org/photoswipe/4.1.3/default-skin/default-skin.min.css">
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe.min.js"></script>
+<script src="https://cdn.staticfile.org/photoswipe/4.1.3/photoswipe-ui-default.min.js"></script>
+
+<script>
+    function viewer_init() {
+        let pswpElement = document.querySelectorAll('.pswp')[0];
+        let $imgArr = document.querySelectorAll(('.article-entry img:not(.reward-img)'))
+
+        $imgArr.forEach(($em, i) => {
+            $em.onclick = () => {
+                // slider展开状态
+                // todo: 这样不好，后面改成状态
+                if (document.querySelector('.left-col.show')) return
+                let items = []
+                $imgArr.forEach(($em2, i2) => {
+                    let img = $em2.getAttribute('data-idx', i2)
+                    let src = $em2.getAttribute('data-target') || $em2.getAttribute('src')
+                    let title = $em2.getAttribute('alt')
+                    // 获得原图尺寸
+                    const image = new Image()
+                    image.src = src
+                    items.push({
+                        src: src,
+                        w: image.width || $em2.width,
+                        h: image.height || $em2.height,
+                        title: title
+                    })
+                })
+                var gallery = new PhotoSwipe(pswpElement, PhotoSwipeUI_Default, items, {
+                    index: parseInt(i)
+                });
+                gallery.init()
+            }
+        })
+    }
+    viewer_init()
+</script> 
+<!-- MathJax -->
+
+<!-- Katex -->
+
+<!-- busuanzi  -->
+ 
+<script src="/js/busuanzi-2.3.pure.min.js"></script>
+ 
+<!-- ClickLove -->
+
+<!-- ClickBoom1 -->
+
+<!-- ClickBoom2 -->
+
+<!-- CodeCopy -->
+ 
+<link rel="stylesheet" href="/css/clipboard.css">
+ <script src="https://cdn.staticfile.org/clipboard.js/2.0.10/clipboard.min.js"></script>
+<script>
+  function wait(callback, seconds) {
+    var timelag = null;
+    timelag = window.setTimeout(callback, seconds);
+  }
+  !function (e, t, a) {
+    var initCopyCode = function(){
+      var copyHtml = '';
+      copyHtml += '<button class="btn-copy" data-clipboard-snippet="">';
+      copyHtml += '<i class="ri-file-copy-2-line"></i><span>COPY</span>';
+      copyHtml += '</button>';
+      $(".highlight .code pre").before(copyHtml);
+      $(".article pre code").before(copyHtml);
+      var clipboard = new ClipboardJS('.btn-copy', {
+        target: function(trigger) {
+          return trigger.nextElementSibling;
+        }
+      });
+      clipboard.on('success', function(e) {
+        let $btn = $(e.trigger);
+        $btn.addClass('copied');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-checkbox-circle-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPIED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-checkbox-circle-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+      clipboard.on('error', function(e) {
+        e.clearSelection();
+        let $btn = $(e.trigger);
+        $btn.addClass('copy-failed');
+        let $icon = $($btn.find('i'));
+        $icon.removeClass('ri-file-copy-2-line');
+        $icon.addClass('ri-time-line');
+        let $span = $($btn.find('span'));
+        $span[0].innerText = 'COPY FAILED';
+        
+        wait(function () { // 等待两秒钟后恢复
+          $icon.removeClass('ri-time-line');
+          $icon.addClass('ri-file-copy-2-line');
+          $span[0].innerText = 'COPY';
+        }, 2000);
+      });
+    }
+    initCopyCode();
+  }(window, document);
+</script>
+ 
+<!-- CanvasBackground -->
+
+<script>
+  if (window.mermaid) {
+    mermaid.initialize({ theme: "forest" });
+  }
+</script>
+
+
+    
+    
+
+  </div>
+</body>
+
+</html>
