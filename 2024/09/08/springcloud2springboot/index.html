@@ -80,7 +80,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">925</span>
+            <span class="post-count">939</span>
         </span>
     </span>
 
@@ -107,7 +107,7 @@
   <p>Spring Cloud项目改SpringBoot的简单记录</p>
 <span id="more"></span>
 
-<h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>公司前员工一时兴起搭建的Spring Cloud项目，由我改为SpringBoot(接锅)，原因是，该项目业务不复杂，用不着Spring Cloud，简化架构，虽然不建议降级操作，但是工作不得不完成。</p>
+<h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>公司前员工搭建的Spring Cloud项目，由本人作为接锅侠，改为SpringBoot架构，原因是，该项目业务不复杂，用不着Spring Cloud，简化架构，虽然不建议降级操作，但因为是工作不得不完成。</p>
 <h3 id="核心思路"><a href="#核心思路" class="headerlink" title="核心思路"></a>核心思路</h3><ol>
 <li>Feign远程调用的处理</li>
 <li>各个微服务的配置文件处理</li>
@@ -119,14 +119,14 @@
 <ol>
 <li>创建一个SpringBoot项目</li>
 <li>合并所有微服务的依赖，去除Spring Cloud相关依赖，剩下的取并集</li>
-<li>将业务代码拷贝到新项目中，并import各种类路径导入正确</li>
+<li>将业务代码拷贝到新项目中，并将import的各种类路径导入正确</li>
 </ol>
-<h3 id="Feign远程调用改造"><a href="#Feign远程调用改造" class="headerlink" title="Feign远程调用改造"></a>Feign远程调用改造</h3><p>一开始的思路是，需要将这些涉及Feign调用的业务将其抽取到Service层，但是，给的开发时间是不允许的，也不会给很多时间充分测试，因此，目标是，既要改得快，又要少bug，因此只剩下一条路：野路子魔改。<br>这个野路子是有理论依据的，也不是很复杂，众所周知，Feign是远程调用，相当于@Controller，而@Service在原理上和@Controller是一样的，区别只在于含义，因此，产生了一个大胆的想法，那就是直接在调用方，不论是在@Service还是@Controller层，直接注入被调用方的@Controller，最终经实践，是行得通的。<br>遇到的问题：<br>在调用直接注入的@Controller层的方法时，有些参数是Map接收的请求，但这样的方法不多，因此只需要在中间多写一层转换就行了。</p>
+<h3 id="Feign远程调用改造"><a href="#Feign远程调用改造" class="headerlink" title="Feign远程调用改造"></a>Feign远程调用改造</h3><p>一开始的思路是，需要将这些涉及Feign调用的业务抽取到Service层，但是，给的开发时间是不允许的，也不会给很多时间充分测试，因此，目标是，既要改得快，又要少bug，只剩下一条路：野路子魔改。<br>这个野路子是有理论依据的，也不是很复杂，众所周知，Feign是远程调用，相当于@Controller，而@Service在原理上和@Controller是一样的，区别只在于含义，因此，产生了一个大胆的想法，那就是直接在调用方，不论是在@Service还是@Controller层，直接注入被调用方的@Controller，最终经实践，是行得通的。<br>遇到的问题：<br>在调用直接注入的@Controller层的方法时，有些参数是Map接收的请求，但这样的方法不多，因此只需要在中间多写一层转换就行了。</p>
 <h3 id="微服务的配置文件改造"><a href="#微服务的配置文件改造" class="headerlink" title="微服务的配置文件改造"></a>微服务的配置文件改造</h3><p>此项改造最为简单，直接取各个微服务配置文件的并集即可，Spring Cloud的配置可直接剔除。</p>
-<h3 id="不同微服务的数据源改造"><a href="#不同微服务的数据源改造" class="headerlink" title="不同微服务的数据源改造"></a>不同微服务的数据源改造</h3><p>通常，每个微服务都会有自己的数据源，现在需要放在一个单体项目里，那么就可以用到<code>dynamic-datasource-spring-boot-starter</code>这个组件了，不推荐自己开发，除非能比已有的实现更好，该组件是苞米豆开发的，牛逼，有空的时候翻过底层的实现原理，就是用的网上的<code>AbstractRoutingDataSource</code>，但是十分的完善，使用效果不错，还有简单的多数据源事务实现，可以说是很牛逼了。<br>剩下的就是在不同的模块加上<code>@DS</code>和<code>@DSTransactional</code>注解即可，一项简单的复制粘贴任务。</p>
-<h3 id="网关导致的同一个接口有不同的调用路径-前缀"><a href="#网关导致的同一个接口有不同的调用路径-前缀" class="headerlink" title="网关导致的同一个接口有不同的调用路径(前缀)"></a>网关导致的同一个接口有不同的调用路径(前缀)</h3><p>如题，在Spring Cloud中，由于网关的路由功能，会导致根据不同的前缀，路由到同一个接口，为了实现改造更快，bug更少的“宏伟目标”，采用了及其暴力的方法：那就是将涉及的到的@Contriller根据前缀的数量，统统复制一份，并且将类改名，配上不同的前缀，这样就不用改前端了。</p>
+<h3 id="不同微服务的数据源改造"><a href="#不同微服务的数据源改造" class="headerlink" title="不同微服务的数据源改造"></a>不同微服务的数据源改造</h3><p>通常，每个微服务都会有自己的数据源，现在需要放在一个单体项目里，那么就可以用到<code>dynamic-datasource-spring-boot-starter</code>这个组件了，不推荐自己开发，除非能比已有的实现更好，该组件是苞米豆开发的，牛逼，有空的时候翻过底层的实现原理，就是用的网上的<code>AbstractRoutingDataSource</code>，但是十分完善，使用效果不错，还有简单的多数据源事务实现，可以说是很牛逼了。<br>剩下的就是在不同的模块加上<code>@DS</code>和<code>@DSTransactional</code>注解即可，一项简单的复制粘贴任务，该项目代码少，比之前的旧项目改SpringBoot简单多了。</p>
+<h3 id="网关导致的同一个接口有不同的调用路径-前缀"><a href="#网关导致的同一个接口有不同的调用路径-前缀" class="headerlink" title="网关导致的同一个接口有不同的调用路径(前缀)"></a>网关导致的同一个接口有不同的调用路径(前缀)</h3><p>在Spring Cloud中，由于网关的路由功能，会导致根据不同的前缀，路由到同一个接口，为了实现改造更快，bug更少的目标，采用了极其暴力的方法，那就是：将涉及到的@Contriller根据前缀的数量，统统复制一份，并且将类改名，配上不同的前缀，这样就不用改前端了。</p>
 <h3 id="打包方式改造"><a href="#打包方式改造" class="headerlink" title="打包方式改造"></a>打包方式改造</h3><p>最后一项就是新的架构，需要新的打包方式，本来想用jar+docker的方式，但领导比较喜欢war+docker的方式，就按照领导的意思来，Google一下，SpringBoot打war包改造即可</p>
-<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>虽然本次改造过程中使用了很多的野路子方法，跟优雅可以说是一点边搭不上，可能还会给以后留下一些坑，但是能又快又好的完成任务，有时候也不失为一种良策，与君共勉。</p>
+<h3 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h3><p>虽然本次改造过程中使用了很多野路子方法，跟优雅可以说是一点边搭不上，可能还会给以后留下一些坑，但是能又快又好的完成任务，有时候也不失为一种良策，与君共勉。</p>
  
       <!-- reward -->
       

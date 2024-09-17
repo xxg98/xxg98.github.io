@@ -107,13 +107,13 @@
   <p>SSM项目改SpringBoot的经历记录，注意点挺多的</p>
 <span id="more"></span>
 
-<h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>因旧项目架构烂到了根，所以本次迁移的目标是：</p>
+<h3 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h3><p>因旧项目架构太烂，所以本次迁移的目标是：</p>
 <ol>
 <li>尽量少动旧项目的代码，即尽量以原有的逻辑运行起来</li>
 <li>尽量少的bug</li>
 </ol>
-<h3 id="核心架构迁移"><a href="#核心架构迁移" class="headerlink" title="核心架构迁移"></a>核心架构迁移</h3><p>由于旧项目是古早时买来的，里面做了一些奇葩封装，会有一些不计后果的代码，底层讲究的是，虽然稀烂，不，不能说烂，是之前的开发人员也不知道怎么回事，反正运行起来了，因此，本人不幸成为了接盘侠(微笑)。</p>
-<h4 id="将旧项目基于Mybatis、github上的第三方框架封装-打的私有jar包-以及多数据源框架-旧项目在网上抄的-迁移为Mybatis-Plus和另外的多数据源组件"><a href="#将旧项目基于Mybatis、github上的第三方框架封装-打的私有jar包-以及多数据源框架-旧项目在网上抄的-迁移为Mybatis-Plus和另外的多数据源组件" class="headerlink" title="将旧项目基于Mybatis、github上的第三方框架封装(打的私有jar包)以及多数据源框架(旧项目在网上抄的)迁移为Mybatis-Plus和另外的多数据源组件"></a>将旧项目基于Mybatis、github上的第三方框架封装(打的私有jar包)以及多数据源框架(旧项目在网上抄的)迁移为Mybatis-Plus和另外的多数据源组件</h4><h5 id="github上的第三方框架私有封装的SqlSession-只有本地jar包，无源码，下方是jar包反编译的"><a href="#github上的第三方框架私有封装的SqlSession-只有本地jar包，无源码，下方是jar包反编译的" class="headerlink" title="github上的第三方框架私有封装的SqlSession(只有本地jar包，无源码，下方是jar包反编译的)"></a>github上的第三方框架私有封装的SqlSession(只有本地jar包，无源码，下方是jar包反编译的)</h5><img src="/../images/ssm2springboot/third_private_jar.png" width=80% />
+<h3 id="核心架构迁移"><a href="#核心架构迁移" class="headerlink" title="核心架构迁移"></a>核心架构迁移</h3><p>由于旧项目是古早时买来的，里面做了一些奇葩封装，会有一些不计后果的代码，底层稀烂，进一步讲，其实是之前的开发人员也不知道怎么回事，反正运行起来了，此时此刻，本人成为了接盘侠。</p>
+<h4 id="将旧项目基于Mybatis、github上封装的第三方框架-打的私有jar包-以及多数据源框架-旧项目在网上抄的-迁移为Mybatis-Plus和另外的多数据源组件"><a href="#将旧项目基于Mybatis、github上封装的第三方框架-打的私有jar包-以及多数据源框架-旧项目在网上抄的-迁移为Mybatis-Plus和另外的多数据源组件" class="headerlink" title="将旧项目基于Mybatis、github上封装的第三方框架(打的私有jar包)以及多数据源框架(旧项目在网上抄的)迁移为Mybatis-Plus和另外的多数据源组件"></a>将旧项目基于Mybatis、github上封装的第三方框架(打的私有jar包)以及多数据源框架(旧项目在网上抄的)迁移为Mybatis-Plus和另外的多数据源组件</h4><h5 id="github上第三方框架封装的SqlSession-只有本地jar包，无源码，下方是jar包反编译的"><a href="#github上第三方框架封装的SqlSession-只有本地jar包，无源码，下方是jar包反编译的" class="headerlink" title="github上第三方框架封装的SqlSession(只有本地jar包，无源码，下方是jar包反编译的)"></a>github上第三方框架封装的SqlSession(只有本地jar包，无源码，下方是jar包反编译的)</h5><img src="/../images/ssm2springboot/third_private_jar.png" width=80% />
 <img src="/../images/ssm2springboot/third_private_jar2.png" width=80% />
 <img src="/../images/ssm2springboot/third_private_jar3.png" width=80% />
 <img src="/../images/ssm2springboot/third_private_jar4.png" width=80% />
@@ -142,7 +142,7 @@
 <img src="/../images/ssm2springboot/old_multiple_datasource_config8.png" width=60% />
 
 <blockquote>
-<p>事务配置(事务拦截器配置了两次，抄都不认真抄)：</p>
+<p>事务配置(事务拦截器配置了两次，严重有问题)：</p>
 </blockquote>
 <p>第一次：<br><img src="/../images/ssm2springboot/old_first_transactional_config.png" width=60% /></p>
 <p>第二次：<br><img src="/../images/ssm2springboot/old_second_transactional_config.png" width=60% /><br><img src="/../images/ssm2springboot/old_second_transactional_config2.png" width=60% /></p>
@@ -160,15 +160,15 @@
 </blockquote>
 <img src="/../images/ssm2springboot/new_mutiple_datasource_config.png" width=60% />
 
-<p>最噩梦的事情来了，我需要根据DataSourceAspect里定义的根据方法的前缀在每一个对应的方法写<code>@DS(&quot;xxxDataSource&quot;)</code>，以及根据<code>txAdvice</code>和<code>transactionInterceptor.transactionAttributes</code>定义的根据方法的前缀在每一个对应的方法写<code>@DSTransactioanl</code>，就这个事情，加了一周的班</p>
+<p>最噩梦的事情来了，我需要根据DataSourceAspect里定义的方法前缀在每一个对应的方法写<code>@DS(&quot;xxxDataSource&quot;)</code>，以及根据<code>txAdvice</code>和<code>transactionInterceptor.transactionAttributes</code>定义的方法前缀在每一个对应的方法写<code>@DSTransactioanl</code>，就这个事情，加了一周的班。</p>
 <blockquote>
-<p>寻找私有jar包的源码(记住com.yizhilu这个这个坐标，以后离得远远的)</p>
+<p>寻找私有jar包的源码(记住com.yizhilu这个坐标，以后离得远远的)</p>
 </blockquote>
 <p>需求：有可能会改jar中的源码</p>
 <ol>
-<li>最开始打算用jar包被反编译后的代码，经过摸索，反编译后的代码，虽然会有逻辑和变量命名和源码对不上，但是实现的功能不会改变，也能凑合用</li>
-<li>最后，为什么知道旧项目核心的私有jar包来自github上的第三方框架，是因为根据注释在github上搜到了原作者的仓库，而且，最要命的是，这个框架还有好几个版本的仓库，于是，又得用肉眼去大概比较一下用哪个版本，防止有人在仓库代码基础上做了手脚然后打成私有jar包留坑，干完这个项目，眼睛废了</li>
-<li>此外，alipay私有jar包的相关源码也是在github上找到的</li>
+<li>最开始打算用jar包被反编译后的代码，经过摸索，反编译后的代码，虽然逻辑、变量命名两者和源码对不上，但是实现的功能不会改变，也能凑合用</li>
+<li>最后，为什么知道旧项目核心的私有jar包来自github上的第三方框架，是因为根据注释在github上搜到了原作者的仓库，而且，最要命的是，这个框架还有好几个版本的仓库，于是，又得用肉眼去大概比较一下用哪个版本，防止有人在仓库代码基础上做了手脚然后打成私有jar包留坑，干完这个需求，眼睛废了</li>
+<li>此外，alipay私有jar包的相关源码(不是官方sdk)也是在github上找到的</li>
 </ol>
 <h3 id="web-xml配置迁移"><a href="#web-xml配置迁移" class="headerlink" title="web.xml配置迁移"></a>web.xml配置迁移</h3><h4 id="CharacterEncodingFilter配置"><a href="#CharacterEncodingFilter配置" class="headerlink" title="CharacterEncodingFilter配置"></a>CharacterEncodingFilter配置</h4><blockquote>
 <p>旧配置如下：</p>
@@ -226,7 +226,7 @@ ps：此处迁移后的配置只有通用的error和404，是因为在旧项目�
 <!-- ![](../images/ssm2springboot/new_filter_config2.png) -->
 <img src="/../images/ssm2springboot/new_filter_config2.png" width=80% />
 其中SiteMeshFilter和sql防注入过滤器正常迁移，而跨域在SpringBoot中有专门的配置。
-注意：SiteMeshFilter拦截了所有路径，配合decorators.xml完成页面构成，所以该过滤器无法删除(旧项目很无奈)，并且十分影响系统性能，该旧项目使用了github上的一个开源框架中，decorators.xml便是其中的文件，有兴趣可以去看看
+注意：SiteMeshFilter拦截了所有路径，配合decorators.xml完成页面构成，所以该过滤器无法删除(旧项目很无奈)，并且十分影响系统性能，该旧项目使用了github上的一个开源框架，decorators.xml便是其中的文件，有兴趣可以去看看。
 
 <h4 id="可以弃用的配置-经查资料可以弃用的，不会影响新项目运行"><a href="#可以弃用的配置-经查资料可以弃用的，不会影响新项目运行" class="headerlink" title="可以弃用的配置(经查资料可以弃用的，不会影响新项目运行)"></a>可以弃用的配置(经查资料可以弃用的，不会影响新项目运行)</h4><ol>
 <li>ContextLoaderListener</li>
@@ -361,8 +361,8 @@ ps：需要注意的是，拦截器需要单独注册成Bean，因为拦截器�
 <img src="/../images/ssm2springboot/new_read_extra_properties_file.png" width=80% />
 <!-- <img src=https://i-blog.csdnimg.cn/blog_migrate/c6399f8f84b8620b533da4dfb3b17e35.png /> -->
 
-<h4 id="升级依赖包版本"><a href="#升级依赖包版本" class="headerlink" title="升级依赖包版本"></a>升级依赖包版本</h4><p>旧项目的gson、httpcore包版本过低在SpringBoot中缺少方法无法兼容</p>
-<h4 id="weibo4j源码下载"><a href="#weibo4j源码下载" class="headerlink" title="weibo4j源码下载"></a>weibo4j源码下载</h4><p>旧项目中有使用到微博的一些功能，但是该包却被封在一个私有的jar包中，并且现在明确迁移后的项目不再使用该私有jar包</p>
+<h4 id="升级依赖包版本"><a href="#升级依赖包版本" class="headerlink" title="升级依赖包版本"></a>升级依赖包版本</h4><p>旧项目的gson、httpcore包版本过低在SpringBoot中缺少方法无法兼容，升级即可</p>
+<h4 id="weibo4j源码下载"><a href="#weibo4j源码下载" class="headerlink" title="weibo4j源码下载"></a>weibo4j源码下载</h4><p>旧项目中有使用到微博的一些功能，但是该包却被封在一个私有的jar包中，并且现在明确迁移后的项目不再使用该私有jar包，去官方地址下载源码</p>
 <h4 id="防xss"><a href="#防xss" class="headerlink" title="防xss"></a>防xss</h4><ol>
 <li>用spring security，基于csp，内容安全策略，容易对旧项目逻辑造成影响</li>
 <li>用mica-xss，虽然底层还是过滤器，影响性能，但是胜在无缝集成</li>

@@ -11,7 +11,7 @@
         name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1"
       />
-      <title>opencv+小程序+本地GPT对作文做点评 |  Yan Yonghao&#39;s Blog</title>
+      <title>opencv+小程序+本地GPT对作文点评 |  Yan Yonghao&#39;s Blog</title>
   <meta name="generator" content="hexo-theme-ayer">
       
       <link rel="shortcut icon" href="/images/favicon.ico" />
@@ -64,7 +64,7 @@
     <header class="article-header">
        
 <h1 class="article-title sea-center" style="border-left:0" itemprop="name">
-  opencv+小程序+本地GPT对作文做点评
+  opencv+小程序+本地GPT对作文点评
 </h1>
  
 
@@ -80,7 +80,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">919</span>
+            <span class="post-count">968</span>
         </span>
     </span>
 
@@ -107,7 +107,7 @@
   <p>使用opencv、小程序、本地GPT来对作文做一个相对稳定的点评</p>
 <span id="more"></span>
 
-<h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h4><p>灵感来自作业帮，将作业帮的功能搬到公司小程序中。</p>
+<h4 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h4><p>灵感来自作业帮，领导要求将作业帮的该功能搬到公司小程序中。</p>
 <h4 id="项目的核心逻辑及实现效果"><a href="#项目的核心逻辑及实现效果" class="headerlink" title="项目的核心逻辑及实现效果"></a>项目的核心逻辑及实现效果</h4><ol>
 <li><p>流程图如下：</p>
  <img src="/../images/opencv-mini- program/opencv-flow.png" width=80% />
@@ -120,19 +120,19 @@
 <h4 id="开发过程中遇到的问题"><a href="#开发过程中遇到的问题" class="headerlink" title="开发过程中遇到的问题"></a>开发过程中遇到的问题</h4><ol>
 <li>虽然微信小程序支持一次选择多张图片，但并不支持一个http请求上传多张图片，因此采用每次选择一张图片，多次上传的方式。</li>
 <li>本项目需要所有图片都上传完后，才能进行识图，同时对批改后的图片顺序也要保持上传时的顺序，前者，通过建一个对应的状态数组在提交前进行校验即可解决，后者，需要在Flask的后台存文件和读文件时编号并按编号读取即可解决。</li>
-<li>一开始领导想让我自己来写OCR，后来去看了下opencv的官方文档，二值化和图像的基本操作都还能过得去，但是后面发现随随便便一个小功能都是几何难度的增加：图片回正、霍夫线算法等，因此最终采用百度的OCR接口。</li>
-<li>优化Flask接口速度：为了提高调用OCR接口的速度，采用多张图片并发调用的方式，最终3张图片控制在5s左右：<ul>
-<li>并发调用识图接口不稳定，3s-10s波动，尝试了很多种优化方法：grequest、协程+aiohttp、多线程，甚至将Flask库以外的组件都拆了，最后发现是因为在调用前使用了opencv将图片放大了两倍导致的，本意是想让识图更准确，没想到导致了这个问题，办法是去掉放大功能即可，并发方面本项目最终用的是多线程，虽然python的多线程是假的，但那只是对于<code>CPU</code>密集型的任务而言，本项目是<code>IO</code>密集型任务，是有用的</li>
-<li>百度的access_token交给定时任务，不用接口每次都去请求access_token</li>
+<li>一开始领导想让本人来写OCR，后来去研究了下opencv的官方文档，二值化和图像的基本操作都还能过得去，但是后面发现随随便便一个小功能做起来都是几何难度的，比如：图片回正、霍夫线算法等，因此最终采用百度的OCR接口。</li>
+<li>优化Flask接口速度，为了提高调用OCR接口的速度，采用多张图片并发调用OCR接口的方式，最终3张图片控制在5s左右：<ul>
+<li>并发调用OCR接口不稳定，3s-10s波动，尝试了很多种优化方法：grequest、协程+aiohttp、多线程，甚至将Flask库以外的组件都拆了，最后排查到是因为在调用前使用了opencv将图片放大了两倍导致的，本意是想让识图更准确，没想到意外导致了这个问题，办法是去掉放大功能即可，并发方面本项目最终用的是多线程，虽然python的多线程是假的，但那只是对于<code>CPU</code>密集型的任务而言，本项目是<code>IO</code>密集型任务，是有用的</li>
+<li>百度的access_token获取交给定时任务，不用每次调用接口时都去请求access_token，加快Flask接口响应</li>
 <li>总评和打分接口拆分，异步请求GPT</li>
 </ul>
 </li>
-<li>画线时如何不识别纸张的页眉和页脚，方法：不选第一个句子，就不会识别到页眉；由于本项目的画线算法是从句末标点向前遍历，天然不会识别到页脚，除非页脚有句末标点符号。</li>
-<li>由于GPT是一个概率，保证点评和打分的稳定性很重要，方法：首先不使用流式实时响应，其次在写prompt时给GPT一个回答的格式模版，如果不符合格式则重试，直到符合为止，超过重试次数则返回默认文字。</li>
-<li>opencv不支持unicode字符，以及支持的字体较少，因此采用支持更全面的Pillow来画每张图画线分句前面的数字标注，这些都是特殊的unicode字符，值得注意的是，需要先将图片转为Pillow支持的格式，画完之后再将其转换回来。</li>
-<li>计算机对图片的感知就是矩阵，因此要封装方法时注意sin函数与矩阵坐标的对应。</li>
-<li>由于拍摄图片的角度或者人为因素等原因，每一行字有的直，有的弯，需要使得波浪线贴合文字底部，办法：将波浪线函数的起始坐标和终点坐标设定为每5个字一组，数字越小越贴合。</li>
-<li>学习小程序识别手势的api，谷歌学习手势触摸事件：touchstart、touchmove、touchend即可。</li>
+<li>给句子画波浪线时如何避免画到纸张的页眉和页脚，方法：不选第一个句子，就不会画到页眉；由于本项目的画线算法是从句末标点向前遍历，天然不会画到页脚，除非页脚有句末标点符号。</li>
+<li>由于GPT是一个概率模型，因此，保证点评和打分的稳定性很重要，方法：首先不使用流式实时响应，其次在写prompt时给GPT一个回答的格式模版，如果不符合格式则重试，直到符合为止，超过重试次数则返回默认文字。</li>
+<li>opencv不支持unicode字符，以及支持的字体较少，因此使用支持更全面的Pillow来在每张图的画线句子前面，增加数字标注，这些都是特殊的unicode字符，值得注意的是，需要先将图片转为Pillow支持的格式，画完之后再将其转换回来。</li>
+<li>计算机对图片的感知就是矩阵，因此在封装画波浪线方法时注意sin函数与矩阵坐标的对应关系。</li>
+<li>由于拍摄作文图片的角度或者人的书写习惯等原因，每一行字有的直，有的弯，需要使得波浪线贴合文字底部，办法：将画波浪线函数的起始坐标和终点坐标设定为每5个字一组，数字越小越贴合。</li>
+<li>实现小程序识别手势的功能，谷歌学习一下手势触摸事件：touchstart、touchmove、touchend即可。</li>
 </ol>
  
       <!-- reward -->
