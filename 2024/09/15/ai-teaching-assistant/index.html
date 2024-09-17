@@ -80,7 +80,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-quill-pen-line"></i>
             <span class="post-meta-item-text"> 字数统计:</span>
-            <span class="post-count">4.1k</span>
+            <span class="post-count">4.3k</span>
         </span>
     </span>
 
@@ -89,7 +89,7 @@
         <span class="post-meta-item-icon">
             <i class="ri-book-open-line"></i>
             <span class="post-meta-item-text"> 阅读时长≈</span>
-            <span class="post-count">18 分钟</span>
+            <span class="post-count">19 分钟</span>
         </span>
     </span>
 </div>
@@ -111,9 +111,14 @@
 <h4 id="技术栈的确定"><a href="#技术栈的确定" class="headerlink" title="技术栈的确定"></a>技术栈的确定</h4><p>技术栈并不能一开始就确定好，因为AI相关的技术当前是不成熟的，而且相关文档非常少，需要足够稳定和灵活的架构，只能一边摸索一边确定确定技术栈，在此给出本人使用的技术栈：</p>
 <ol>
 <li>架构<br> 一个微调过自我认知的AI模型、嵌入(向量化)模型、Flask、LangChain、SpringBoot、搜索引擎(bing和百度)、Elasticsearch</li>
-<li>AI模型微调部署相关框架<br> Xtuner、LMDeploy、LLaMA-Factory、vllm</li>
-<li>关键技术<br> sse、websocket、RAG</li>
+<li>AI模型微调、量化和部署相关框架<br> Xtuner、LMDeploy、LLaMA-Factory、vllm</li>
+<li>关键技术<br> sse、websocket、RAG(搜索增强)</li>
 <li>关键硬件<br> A40、RTX4090、RTX3090</li>
+</ol>
+<h4 id="实现效果"><a href="#实现效果" class="headerlink" title="实现效果"></a>实现效果</h4><ol>
+<li>接入搜索引擎： <img src="/../images/ai-teaching-assistant/question-search-engine.jpg" width=80% /></li>
+<li>网课字幕助教以及文档问答： <img src="/../images/ai-teaching-assistant/question-file.jpg" width=80% />
+ <img src="/../images/ai-teaching-assistant/question-file2.jpg" width=80% /></li>
 </ol>
 <h4 id="失败的经历"><a href="#失败的经历" class="headerlink" title="失败的经历"></a>失败的经历</h4><ol>
 <li><p>失败的模型微调、量化、部署</p>
@@ -174,6 +179,7 @@
 <li>中途有尝试使用Elasticsearch的ik分词器来代替向量相似度匹配，存入时细分词，查询时粗分词，最后发现效果没有后者好，因此放弃ik分词器。</li>
 <li>LangChain只适合用来做分割文本操作，原因上方有提到过。</li>
 <li>使用过的模型有：Baichuan2-13&#x2F;7B-chat、Yi-34B-Chat、InternLM2-20&#x2F;7B-Chat、Qwen2-7B-Instruct，其中，超过13&#x2F;14B的模型在只有24G显存的情况下就需要量化部署了；InternLM2和Qwen2系列支持的上下文通过配置都可达128k，但是前者有并发问题，推荐后者；综合回答和吃显存的条件，Qwen2的效果相对较好。</li>
+<li>在实现重新生成当前回答和一进入聊天框就自动总结的功能时，自己琢磨出来的小技巧：都可以通过类似拨号的特殊指令来做到，但这些指令不要展示在界面上，前者可以定义<code>#9527</code>是重新生成指令，点击重新生成发送这个指令给后台，前端(包括app)不需要做任何改动，后者可以定义<code>#111</code>是总结指令，在一进入聊天框就发送该指令。</li>
 </ol>
 <h4 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h4><p>本次摸索感触良多：</p>
 <ol>
@@ -258,6 +264,15 @@
 
    
   <nav class="article-nav">
+    
+      <a href="/2024/09/17/opencv-mini-program/" class="article-nav-link">
+        <strong class="article-nav-caption">上一篇</strong>
+        <div class="article-nav-title">
+          
+            opencv+小程序+本地GPT对作文做点评
+          
+        </div>
+      </a>
     
     
       <a href="/2024/09/08/springcloud2springboot/" class="article-nav-link">
